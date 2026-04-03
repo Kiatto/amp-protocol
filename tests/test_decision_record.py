@@ -1,6 +1,6 @@
 import pytest
 
-from amp.core.decision import build_decision_record
+from amp.decision import build_decision_record
 
 
 def test_decision_record_requires_explanation():

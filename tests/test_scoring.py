@@ -25,4 +25,4 @@ def test_timing_score():
 def test_promotion_eligibility_score():
     assert promotion_eligibility_score(1.0, 1.0, 1.0) == 1.0
     assert promotion_eligibility_score(0.5, 0.5, 0.5) == 0.125
-    assert promotion_eligibility_score(0.9, 0.8, 1.0) == 0.72
+    assert promotion_eligibility_score(0.9, 0.8, 1.0) == pytest.approx(0.72)
