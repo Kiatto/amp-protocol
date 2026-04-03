@@ -29,7 +29,7 @@ from amp.scoring import (
 )
 from amp.brand import select_eligible_brand
 from amp.config import INTENT_THRESHOLD, PES_THRESHOLD
-from amp.decision import Decision
+from amp.models import Decision
 
 
 def amp_agent_flow(user_input: UserInput) -> Decision:
