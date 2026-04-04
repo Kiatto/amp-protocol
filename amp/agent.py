@@ -19,7 +19,7 @@ Design decisions:
   It is only populated for HANDSHAKE_ALLOWED, after all gates have passed.
 """
 
-from amp.models import UserInput
+from amp.models import UserInput, Decision
 from amp.intent import detect_intent, identify_gap
 from amp.scoring import (
     intent_score,
@@ -29,7 +29,6 @@ from amp.scoring import (
 )
 from amp.brand import select_eligible_brand
 from amp.config import INTENT_THRESHOLD, PES_THRESHOLD
-from amp.decision import Decision
 
 
 def amp_agent_flow(user_input: UserInput) -> Decision:
