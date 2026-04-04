@@ -14,7 +14,9 @@ def test_intent_score():
 def test_gap_score():
     gap = Gap(type="test", severity=0.6)
     assert gap_score(gap) == 0.6
-
+    
+    # Updated: Score validation happens at dataclass level.
+    # Passing invalid values should raise ValueError as per protocol.
     with pytest.raises(ValueError):
         Gap(type="none", severity=-0.1)
 
