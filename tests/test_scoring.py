@@ -14,9 +14,9 @@ def test_intent_score():
 def test_gap_score():
     gap = Gap(type="test", severity=0.6)
     assert gap_score(gap) == 0.6
-    
-    gap_zero = Gap(type="none", severity=-0.1)
-    assert gap_score(gap_zero) == 0.0
+
+    with pytest.raises(ValueError):
+        Gap(type="none", severity=-0.1)
 
 def test_timing_score():
     ctx = DecisionContext(proximity_score=0.95)

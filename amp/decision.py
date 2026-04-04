@@ -15,8 +15,22 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+
+@dataclass
+class Decision:
+    decision: str
+    pes: float
+    scores: Dict[str, float]
+    reason: str
+    brand: Optional[Dict[str, Any]] = field(default=None)
+
+    def __post_init__(self):
+        if not (0.0 <= self.pes <= 1.0):
+            raise ValueError("pes must be between 0.0 and 1.0")
 
 
 def build_decision_record(
