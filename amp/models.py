@@ -46,3 +46,12 @@ class DecisionContext:
 class UserInput:
     text: str
     context: DecisionContext
+
+
+@dataclass
+class Decision:
+    decision: str
+    pes: float
+    scores: dict
+    reason: str
+    brand: dict = None
