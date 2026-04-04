@@ -1,22 +1,37 @@
 """
-amp.core.decision
------------------
-Builds the AMP Decision Record.
+amp.decision
+------------
+Builds the AMP Decision Record and defines the Decision dataclass.
 
 Design decisions:
 - `explanation` is a required keyword argument (no default).
   Omitting it raises TypeError, which enforces the protocol rule:
   every decision MUST be explainable. This is tested in test_decision_record.py.
 
-- The function returns a plain dict (not a dataclass) so that it can be
+- The build_decision_record function returns a plain dict (not a dataclass) so that it can be
   serialized to JSON without extra steps and consumed by any external system.
 
 - We include a timestamp so that decision records are self-contained
   for auditability without depending on external logging infrastructure.
 """
 
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+
+@dataclass(slots=True)
+class Decision:
+    decision: str
+    pes: float
+    scores: Dict[str, float]
+    reason: str
+    brand: Optional[Dict[str, str]] = field(default=None)
+
+    def __post_init__(self):
+        # Strict validation as per memory instructions
+        if not (0.0 <= self.pes <= 1.0):
+            raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
 
 
 def build_decision_record(
@@ -24,7 +39,7 @@ def build_decision_record(
     intent: Dict[str, Any],
     gap: Dict[str, Any],
     context: Dict[str, Any],
-    explanation: Dict[str, Any],   # ← required: no default value on purpose
+    explanation: Dict[str, Any],  # ← required: no default value on purpose
 ) -> Dict[str, Any]:
     """
     Build a structured AMP Decision Record.
