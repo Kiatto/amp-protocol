@@ -12,8 +12,8 @@ No brands. No promotion delivery.
 
 import uuid
 
-from amp.core.decision import build_decision_record
-from amp.logging.decision_logger import write_decision_log
+from amp.decision import build_decision_record
+from amp.decision_logger import write_decision_log
 
 
 def main():
