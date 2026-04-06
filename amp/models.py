@@ -1,5 +1,6 @@
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional
+from amp.config import MAX_TEXT_LENGTH
 
 
 @dataclass(slots=True)
@@ -47,14 +48,20 @@ class UserInput:
     text: str
     context: DecisionContext
 
+    def __post_init__(self):
+        if not isinstance(self.text, str):
+            raise ValueError(f"Input text must be a string, got {type(self.text)}")
+        if len(self.text) > MAX_TEXT_LENGTH:
+            raise ValueError(f"Input text exceeds maximum length of {MAX_TEXT_LENGTH} characters")
+
 
 @dataclass(slots=True)
 class Decision:
     decision: str
     pes: float
-    scores: dict
+    scores: Dict[str, float]
     reason: str
-    brand: dict = None
+    brand: Optional[Dict[str, str]] = field(default=None)
 
     def __post_init__(self):
         # Strict validation as per memory instructions

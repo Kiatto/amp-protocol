@@ -15,23 +15,10 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-
-@dataclass(slots=True)
-class Decision:
-    decision: str
-    pes: float
-    scores: Dict[str, float]
-    reason: str
-    brand: Optional[Dict[str, str]] = field(default=None)
-
-    def __post_init__(self):
-        # Strict validation as per memory instructions
-        if not (0.0 <= self.pes <= 1.0):
-            raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
+from amp.models import Decision
 
 
 def build_decision_record(
