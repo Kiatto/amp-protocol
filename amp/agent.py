@@ -40,22 +40,25 @@ def amp_agent_flow(user_input: UserInput) -> Decision:
     """
 
     intent = detect_intent(user_input)
+    # ⚡ Bolt: Performance Optimization
+    # Use local variables for scores to avoid redundant attribute access
+    # across multiple gate checks and decision object creation.
     i_score = intent_score(intent)
 
     # --- Gate 1: intent threshold ---
-    if intent.confidence < INTENT_THRESHOLD:
+    if i_score < INTENT_THRESHOLD:
         return Decision(
             decision="NEUTRAL",
             pes=0.0,
             scores={"intent": i_score, "gap": 0.0, "timing": 0.0},
-            reason=f"Intent confidence {intent.confidence:.2f} below threshold {INTENT_THRESHOLD}",
+            reason=f"Intent confidence {i_score:.2f} below threshold {INTENT_THRESHOLD}",
         )
 
     gap = identify_gap(user_input)
     g_score = gap_score(gap)
 
     # --- Gate 2: gap must exist ---
-    if gap.severity == 0:
+    if g_score == 0:
         return Decision(
             decision="INSIGHT_ONLY",
             pes=0.0,

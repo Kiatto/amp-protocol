@@ -48,10 +48,15 @@ class UserInput:
     context: DecisionContext
 
 
-@dataclass
+@dataclass(slots=True)
 class Decision:
     decision: str
     pes: float
     scores: dict
     reason: str
     brand: dict = None
+
+    def __post_init__(self):
+        # Strict validation as per memory instructions
+        if not (0.0 <= self.pes <= 1.0):
+            raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
