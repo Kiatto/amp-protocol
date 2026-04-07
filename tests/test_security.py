@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 from amp.models import UserInput, Decision, DecisionContext, Intent, Gap, Brand
 from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH
-from amp.audit import write_decision_log
+from amp.audit import write_decision_log as deprecated_write_decision_log
+from amp.decision_logger import write_decision_log
 
 
 def test_user_input_length_limit():
@@ -130,6 +131,64 @@ def test_brand_security():
         )
 
 
+def test_decision_reason_validation():
+    scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
+
+    # Valid reason
+    Decision(decision="NEUTRAL", pes=0.5, scores=scores, reason="valid reason")
+
+    # Reason too long
+    with pytest.raises(ValueError, match="Decision reason exceeds maximum length"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores=scores,
+            reason="a" * (MAX_TEXT_LENGTH + 1),
+        )
+
+    # Reason not a string
+    with pytest.raises(ValueError, match="Decision reason must be a string"):
+        Decision(decision="NEUTRAL", pes=0.5, scores=scores, reason=123)  # type: ignore
+
+
+def test_decision_scores_validation():
+    # Invalid score value
+    with pytest.raises(ValueError, match="Score 'intent' must be between 0.0 and 1.0"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"intent": 1.1, "gap": 0.5, "timing": 0.5},
+            reason="test",
+        )
+
+    with pytest.raises(ValueError, match="Score 'gap' must be between 0.0 and 1.0"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"intent": 0.5, "gap": -0.1, "timing": 0.5},
+            reason="test",
+        )
+
+
+def test_write_decision_log_validation(tmp_path):
+    log_file = tmp_path / "test_decisions_validation.jsonl"
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr("amp.decision_logger.LOG_PATH", log_file)
+
+        decision_record = {"ts": "2024-01-01", "outcome": "NEUTRAL"}
+
+        # Valid trace_id
+        write_decision_log("valid-trace", decision_record)
+
+        # trace_id too long
+        with pytest.raises(ValueError, match="trace_id exceeds maximum length"):
+            write_decision_log("a" * (MAX_ID_LENGTH + 1), decision_record)
+
+        # trace_id not a string
+        with pytest.raises(ValueError, match="trace_id must be a string"):
+            write_decision_log(123, decision_record)  # type: ignore
+
+
 def test_audit_log_redaction(tmp_path):
     # Use a temporary log file for testing
     log_file = tmp_path / "test_decisions.jsonl"
@@ -140,7 +199,7 @@ def test_audit_log_redaction(tmp_path):
         user_input = {"text": "SENSITIVE DATA", "context": {"user_id": 123}}
         decision = {"outcome": "NEUTRAL"}
 
-        write_decision_log(trace_id, user_input, decision)
+        deprecated_write_decision_log(trace_id, user_input, decision)
 
         # Verify the log file content
         with open(log_file, "r") as f:
