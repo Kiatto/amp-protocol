@@ -130,6 +130,42 @@ def test_brand_security():
             assets=[123],  # type: ignore
         )
 
+    # Domain validation
+    with pytest.raises(ValueError, match="Brand domain must be a string"):
+        Brand(name="Valid", domain=123, allowed_intents=["INTENT"], assets=[])  # type: ignore
+
+    with pytest.raises(ValueError, match="Brand domain exceeds maximum length"):
+        Brand(
+            name="Valid",
+            domain="a" * (MAX_TEXT_LENGTH + 1),
+            allowed_intents=["INTENT"],
+            assets=[],
+        )
+
+    # allowed_intents validation
+    with pytest.raises(ValueError, match="allowed_intents must be a list"):
+        Brand(name="Valid", domain="valid.com", allowed_intents="INTENT", assets=[])  # type: ignore
+
+    with pytest.raises(ValueError, match="Intent name must be a string"):
+        Brand(name="Valid", domain="valid.com", allowed_intents=[123], assets=[])  # type: ignore
+
+    with pytest.raises(ValueError, match="Intent name in allowed_intents exceeds"):
+        Brand(
+            name="Valid",
+            domain="valid.com",
+            allowed_intents=["A" * (MAX_ID_LENGTH + 1)],
+            assets=[],
+        )
+
+    # Asset length validation
+    with pytest.raises(ValueError, match="Asset path exceeds maximum length"):
+        Brand(
+            name="Valid",
+            domain="valid.com",
+            allowed_intents=["INTENT"],
+            assets=["a" * (MAX_TEXT_LENGTH + 1)],
+        )
+
 
 def test_decision_reason_validation():
     scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
@@ -169,6 +205,20 @@ def test_decision_scores_validation():
             reason="test",
         )
 
+    # Score name validation
+    with pytest.raises(ValueError, match="Score name must be a string"):
+        Decision(
+            decision="NEUTRAL", pes=0.5, scores={123: 0.5}, reason="test"  # type: ignore
+        )
+
+    with pytest.raises(ValueError, match="Score name '.*' exceeds maximum length"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"A" * (MAX_ID_LENGTH + 1): 0.5},
+            reason="test",
+        )
+
 
 def test_write_decision_log_validation(tmp_path):
     log_file = tmp_path / "test_decisions_validation.jsonl"
@@ -187,6 +237,10 @@ def test_write_decision_log_validation(tmp_path):
         # trace_id not a string
         with pytest.raises(ValueError, match="trace_id must be a string"):
             write_decision_log(123, decision_record)  # type: ignore
+
+        # decision_record not a dict
+        with pytest.raises(ValueError, match="decision_record must be a dict"):
+            write_decision_log("trace", "not-a-dict")  # type: ignore
 
 
 def test_audit_log_redaction(tmp_path):
