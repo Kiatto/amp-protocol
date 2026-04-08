@@ -121,6 +121,19 @@ class Decision:
         if self.decision not in self.ALLOWED_OUTCOMES:
             raise ValueError(f"Invalid decision outcome: {self.decision}")
 
+        if not isinstance(self.reason, str):
+            raise ValueError(f"Decision reason must be a string, got {type(self.reason)}")
+        if len(self.reason) > MAX_TEXT_LENGTH:
+            raise ValueError(
+                f"Decision reason exceeds maximum length of {MAX_TEXT_LENGTH}"
+            )
+
+        for name, score in self.scores.items():
+            if not (0.0 <= score <= 1.0):
+                raise ValueError(
+                    f"Score '{name}' must be between 0.0 and 1.0, got {score}"
+                )
+
         # Strict validation as per memory instructions
         if not (0.0 <= self.pes <= 1.0):
             raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
