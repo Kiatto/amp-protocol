@@ -56,12 +56,36 @@ class Brand:
         if len(self.name) > MAX_ID_LENGTH:
             raise ValueError(f"Brand name exceeds maximum length of {MAX_ID_LENGTH}")
 
+        if not isinstance(self.domain, str):
+            raise ValueError(f"Brand domain must be a string, got {type(self.domain)}")
+        if len(self.domain) > MAX_TEXT_LENGTH:
+            raise ValueError(
+                f"Brand domain exceeds maximum length of {MAX_TEXT_LENGTH}"
+            )
+
+        if not isinstance(self.allowed_intents, list):
+            raise ValueError(
+                f"allowed_intents must be a list, got {type(self.allowed_intents)}"
+            )
+        for intent in self.allowed_intents:
+            if not isinstance(intent, str):
+                raise ValueError(f"Intent name must be a string, got {type(intent)}")
+            if len(intent) > MAX_ID_LENGTH:
+                raise ValueError(
+                    f"Intent name in allowed_intents exceeds maximum length of {MAX_ID_LENGTH}"
+                )
+
         # Pre-calculate the brand info dictionary
         self.brand_info = {"name": self.name, "domain": self.domain}
 
         for asset in self.assets:
             if not isinstance(asset, str):
                 raise ValueError(f"Asset path must be a string, got {type(asset)}")
+
+            if len(asset) > MAX_TEXT_LENGTH:
+                raise ValueError(
+                    f"Asset path exceeds maximum length of {MAX_TEXT_LENGTH}"
+                )
 
             # Robust path traversal and absolute path check
             if ".." in asset or asset.startswith(("/", "\\", "~")):
@@ -129,6 +153,12 @@ class Decision:
             )
 
         for name, score in self.scores.items():
+            if not isinstance(name, str):
+                raise ValueError(f"Score name must be a string, got {type(name)}")
+            if len(name) > MAX_ID_LENGTH:
+                raise ValueError(
+                    f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}"
+                )
             if not (0.0 <= score <= 1.0):
                 raise ValueError(
                     f"Score '{name}' must be between 0.0 and 1.0, got {score}"

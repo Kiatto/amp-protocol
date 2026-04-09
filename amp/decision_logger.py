@@ -51,6 +51,11 @@ def write_decision_log(
     if len(trace_id) > MAX_ID_LENGTH:
         raise ValueError(f"trace_id exceeds maximum length of {MAX_ID_LENGTH}")
 
+    if not isinstance(decision_record, dict):
+        raise ValueError(
+            f"decision_record must be a dict, got {type(decision_record)}"
+        )
+
     # ⚡ Bolt: Performance Optimization
     # Reuse the timestamp from the decision record to avoid a redundant syscall.
     # This also ensures the log entry and the record have perfectly synchronized timestamps.
