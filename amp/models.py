@@ -14,6 +14,9 @@ class Intent:
         if len(self.name) > MAX_ID_LENGTH:
             raise ValueError(f"Intent name exceeds maximum length of {MAX_ID_LENGTH}")
 
+        if not isinstance(self.confidence, (int, float)):
+            raise ValueError(f"Confidence must be a number, got {type(self.confidence)}")
+
         # Strict validation as per memory instructions
         if not (0.0 <= self.confidence <= 1.0):
             raise ValueError(
@@ -31,6 +34,9 @@ class Gap:
             raise ValueError(f"Gap type must be a string, got {type(self.type)}")
         if len(self.type) > MAX_ID_LENGTH:
             raise ValueError(f"Gap type exceeds maximum length of {MAX_ID_LENGTH}")
+
+        if not isinstance(self.severity, (int, float)):
+            raise ValueError(f"Severity must be a number, got {type(self.severity)}")
 
         # Strict validation as per memory instructions
         if not (0.0 <= self.severity <= 1.0):
@@ -101,6 +107,10 @@ class DecisionContext:
     proximity_score: float  # 0.0 – 1.0
 
     def __post_init__(self):
+        if not isinstance(self.proximity_score, (int, float)):
+            raise ValueError(
+                f"Proximity score must be a number, got {type(self.proximity_score)}"
+            )
         # Strict validation as per memory instructions
         if not (0.0 <= self.proximity_score <= 1.0):
             raise ValueError(
@@ -123,6 +133,8 @@ class UserInput:
             raise ValueError(f"Input text must be a string, got {type(self.text)}")
         if len(self.text) > MAX_TEXT_LENGTH:
             raise ValueError(f"Input text exceeds maximum length of {MAX_TEXT_LENGTH} characters")
+        if not isinstance(self.context, DecisionContext):
+            raise ValueError(f"context must be a DecisionContext, got {type(self.context)}")
         self.text_lower = self.text.lower()
 
 
@@ -152,6 +164,9 @@ class Decision:
                 f"Decision reason exceeds maximum length of {MAX_TEXT_LENGTH}"
             )
 
+        if not isinstance(self.scores, dict):
+            raise ValueError(f"scores must be a dict, got {type(self.scores)}")
+
         for name, score in self.scores.items():
             if not isinstance(name, str):
                 raise ValueError(f"Score name must be a string, got {type(name)}")
@@ -159,11 +174,19 @@ class Decision:
                 raise ValueError(
                     f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}"
                 )
+            if not isinstance(score, (int, float)):
+                raise ValueError(f"Score '{name}' must be a number, got {type(score)}")
             if not (0.0 <= score <= 1.0):
                 raise ValueError(
                     f"Score '{name}' must be between 0.0 and 1.0, got {score}"
                 )
 
+        if not isinstance(self.pes, (int, float)):
+            raise ValueError(f"PES must be a number, got {type(self.pes)}")
+
         # Strict validation as per memory instructions
         if not (0.0 <= self.pes <= 1.0):
             raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
+
+        if self.brand is not None and not isinstance(self.brand, dict):
+            raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")

@@ -43,6 +43,17 @@ def build_decision_record(
     -------
     A plain dict ready for serialization or external handling.
     """
+    if outcome not in Decision.ALLOWED_OUTCOMES:
+        raise ValueError(f"Invalid decision outcome: {outcome}")
+
+    if not isinstance(intent, dict):
+        raise ValueError(f"intent must be a dict, got {type(intent)}")
+    if not isinstance(gap, dict):
+        raise ValueError(f"gap must be a dict, got {type(gap)}")
+    if not isinstance(context, dict):
+        raise ValueError(f"context must be a dict, got {type(context)}")
+    if not isinstance(explanation, dict):
+        raise ValueError(f"explanation must be a dict, got {type(explanation)}")
 
     return {
         "ts": datetime.now(timezone.utc).isoformat(),

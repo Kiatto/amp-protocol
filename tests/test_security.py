@@ -31,6 +31,10 @@ def test_user_input_type_check():
     with pytest.raises(ValueError, match="Input text must be a string"):
         UserInput(text=None, context=context)  # type: ignore
 
+    # Non-DecisionContext context
+    with pytest.raises(ValueError, match="context must be a DecisionContext"):
+        UserInput(text="valid", context="not-a-context")  # type: ignore
+
 
 def test_decision_pes_validation():
     scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
@@ -40,7 +44,11 @@ def test_decision_pes_validation():
     Decision(decision="NEUTRAL", pes=1.0, scores=scores, reason="test")
     Decision(decision="NEUTRAL", pes=0.5, scores=scores, reason="test")
 
-    # Invalid PES
+    # Invalid PES type
+    with pytest.raises(ValueError, match="PES must be a number"):
+        Decision(decision="NEUTRAL", pes="not-a-number", scores=scores, reason="test")  # type: ignore
+
+    # Invalid PES range
     with pytest.raises(ValueError, match="PES must be between 0.0 and 1.0"):
         Decision(decision="NEUTRAL", pes=-0.1, scores=scores, reason="test")
 
@@ -73,6 +81,10 @@ def test_intent_name_validation():
     with pytest.raises(ValueError, match="Intent name must be a string"):
         Intent(name=123, confidence=0.5)  # type: ignore
 
+    # Wrong confidence type
+    with pytest.raises(ValueError, match="Confidence must be a number"):
+        Intent(name="VALID", confidence="not-a-number")  # type: ignore
+
 
 def test_gap_type_validation():
     # Valid
@@ -81,6 +93,14 @@ def test_gap_type_validation():
     # Too long
     with pytest.raises(ValueError, match="Gap type exceeds maximum length"):
         Gap(type="A" * (MAX_ID_LENGTH + 1), severity=0.5)
+
+    # Wrong type
+    with pytest.raises(ValueError, match="Gap type must be a string"):
+        Gap(type=123, severity=0.5)  # type: ignore
+
+    # Wrong severity type
+    with pytest.raises(ValueError, match="Severity must be a number"):
+        Gap(type="cognitive", severity="not-a-number")  # type: ignore
 
 
 def test_brand_security():
@@ -188,6 +208,15 @@ def test_decision_reason_validation():
 
 
 def test_decision_scores_validation():
+    # Invalid scores type
+    with pytest.raises(ValueError, match="scores must be a dict"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores="not-a-dict",  # type: ignore
+            reason="test",
+        )
+
     # Invalid score value
     with pytest.raises(ValueError, match="Score 'intent' must be between 0.0 and 1.0"):
         Decision(
@@ -202,6 +231,15 @@ def test_decision_scores_validation():
             decision="NEUTRAL",
             pes=0.5,
             scores={"intent": 0.5, "gap": -0.1, "timing": 0.5},
+            reason="test",
+        )
+
+    # Invalid score type
+    with pytest.raises(ValueError, match="Score 'intent' must be a number"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"intent": "not-a-number", "gap": 0.5, "timing": 0.5},  # type: ignore
             reason="test",
         )
 
@@ -241,6 +279,71 @@ def test_write_decision_log_validation(tmp_path):
         # decision_record not a dict
         with pytest.raises(ValueError, match="decision_record must be a dict"):
             write_decision_log("trace", "not-a-dict")  # type: ignore
+
+
+def test_decision_context_validation():
+    # Valid
+    DecisionContext(proximity_score=0.5)
+
+    # Invalid type
+    with pytest.raises(ValueError, match="Proximity score must be a number"):
+        DecisionContext(proximity_score="not-a-number")  # type: ignore
+
+    # Invalid range
+    with pytest.raises(ValueError, match="Proximity score must be between 0.0 and 1.0"):
+        DecisionContext(proximity_score=1.1)
+
+
+def test_decision_brand_validation():
+    scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
+
+    # Valid
+    Decision(
+        decision="HANDSHAKE_ALLOWED",
+        pes=0.5,
+        scores=scores,
+        reason="test",
+        brand={"name": "test"},
+    )
+
+    # Invalid type
+    with pytest.raises(ValueError, match="brand must be a dict or None"):
+        Decision(
+            decision="HANDSHAKE_ALLOWED",
+            pes=0.5,
+            scores=scores,
+            reason="test",
+            brand="not-a-dict",  # type: ignore
+        )
+
+
+def test_build_decision_record_validation():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+    valid_explanation = {"gate": "passed"}
+
+    # Valid
+    build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, valid_explanation)
+
+    # Invalid outcome
+    with pytest.raises(ValueError, match="Invalid decision outcome"):
+        build_decision_record("INVALID", valid_intent, valid_gap, valid_context, valid_explanation)
+
+    # Invalid types
+    with pytest.raises(ValueError, match="intent must be a dict"):
+        build_decision_record("NEUTRAL", "not-a-dict", valid_gap, valid_context, valid_explanation)  # type: ignore
+
+    with pytest.raises(ValueError, match="gap must be a dict"):
+        build_decision_record("NEUTRAL", valid_intent, "not-a-dict", valid_context, valid_explanation)  # type: ignore
+
+    with pytest.raises(ValueError, match="context must be a dict"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, "not-a-dict", valid_explanation)  # type: ignore
+
+    with pytest.raises(ValueError, match="explanation must be a dict"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, "not-a-dict")  # type: ignore
 
 
 def test_audit_log_redaction(tmp_path):
