@@ -13,3 +13,11 @@
 ## 2025-05-20 - [Pre-instantiation of Static Data Objects]
 **Learning:** Frequent instantiation and validation of dataclasses in hot paths (like Intent and Gap objects in the decision flow) can introduce measurable latency. Pre-instantiating common, static outcomes at the module level avoids redundant constructor calls and validation logic.
 **Action:** For functions that frequently return the same set of static data objects, pre-instantiate them as module-level constants and reuse them.
+
+## 2026-04-09 - [The Cost of Redundant Logic in Hot Paths]
+**Learning:** Even simple built-in function calls like `max(x, 0.0)` contribute measurable overhead in Python's hot paths. If the range of a value is already guaranteed by strict dataclass validation, removing these redundant checks can reduce latency without sacrificing safety.
+**Action:** Trust internal contract validations (like dataclass `__post_init__`) to avoid re-validating the same constraints in downstream execution logic.
+
+## 2026-04-09 - [Micro-optimizations vs. Readability]
+**Learning:** Extreme micro-optimizations like binding global constants to local variables or inlining high-level abstractions can yield measurable performance gains in Python but significantly degrade code readability and maintainability. These are often rejected during code review as "code smells."
+**Action:** Balance performance gains with readability. Prioritize optimizations that simplify logic (like removing redundant calls) over those that obfuscate it for marginal nanosecond wins.

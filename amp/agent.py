@@ -50,8 +50,9 @@ def amp_agent_flow(user_input: UserInput) -> Decision:
 
     gap = identify_gap(user_input)
     # ⚡ Bolt: Performance Optimization
-    # Inlined scoring logic to avoid redundant function calls.
-    g_score = max(gap.severity, 0.0)
+    # Use gap.severity directly. Redundant max(..., 0.0) removed as severity is
+    # already validated to be within [0.0, 1.0] in the Gap dataclass.
+    g_score = gap.severity
 
     # --- Gate 2: gap must exist ---
     if g_score == 0:
