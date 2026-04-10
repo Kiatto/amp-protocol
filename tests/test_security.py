@@ -2,7 +2,7 @@ import pytest
 import json
 from pathlib import Path
 from amp.models import UserInput, Decision, DecisionContext, Intent, Gap, Brand
-from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH
+from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_COLLECTION_SIZE
 from amp.audit import write_decision_log as deprecated_write_decision_log
 from amp.decision_logger import write_decision_log
 
@@ -344,6 +344,68 @@ def test_build_decision_record_validation():
 
     with pytest.raises(ValueError, match="explanation must be a dict"):
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, "not-a-dict")  # type: ignore
+
+
+def test_collection_size_limits():
+    # Brand: allowed_intents limit
+    with pytest.raises(ValueError, match="allowed_intents exceeds maximum size"):
+        Brand(
+            name="Test",
+            domain="test.com",
+            allowed_intents=["INTENT"] * (MAX_COLLECTION_SIZE + 1),
+            assets=[],
+        )
+
+    # Brand: assets limit
+    with pytest.raises(ValueError, match="assets exceeds maximum size"):
+        Brand(
+            name="Test",
+            domain="test.com",
+            allowed_intents=[],
+            assets=["asset.pdf"] * (MAX_COLLECTION_SIZE + 1),
+        )
+
+    # Decision: scores limit
+    with pytest.raises(ValueError, match="scores exceeds maximum size"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={f"score_{i}": 0.5 for i in range(MAX_COLLECTION_SIZE + 1)},
+            reason="test",
+        )
+
+    # Decision: brand dict limit
+    with pytest.raises(ValueError, match="brand exceeds maximum size"):
+        Decision(
+            decision="HANDSHAKE_ALLOWED",
+            pes=0.5,
+            scores={},
+            reason="test",
+            brand={f"key_{i}": "val" for i in range(MAX_COLLECTION_SIZE + 1)},
+        )
+
+
+def test_build_decision_record_collection_limits():
+    from amp.decision import build_decision_record
+
+    valid_item = {"a": 1}
+    oversized_item = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
+
+    # intent limit
+    with pytest.raises(ValueError, match="intent exceeds maximum size"):
+        build_decision_record("NEUTRAL", oversized_item, valid_item, valid_item, valid_item)
+
+    # gap limit
+    with pytest.raises(ValueError, match="gap exceeds maximum size"):
+        build_decision_record("NEUTRAL", valid_item, oversized_item, valid_item, valid_item)
+
+    # context limit
+    with pytest.raises(ValueError, match="context exceeds maximum size"):
+        build_decision_record("NEUTRAL", valid_item, valid_item, oversized_item, valid_item)
+
+    # explanation limit
+    with pytest.raises(ValueError, match="explanation exceeds maximum size"):
+        build_decision_record("NEUTRAL", valid_item, valid_item, valid_item, oversized_item)
 
 
 def test_audit_log_redaction(tmp_path):
