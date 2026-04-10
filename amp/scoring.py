@@ -6,7 +6,10 @@ def intent_score(intent: Intent) -> float:
 
 
 def gap_score(gap: Gap) -> float:
-    return max(gap.severity, 0.0)
+    # Performance Optimization: Use gap.severity directly. Redundant max(..., 0.0)
+    # removed as severity is already strictly validated to be within [0.0, 1.0]
+    # in the Gap dataclass.
+    return gap.severity
 
 
 def timing_score(context: DecisionContext) -> float:

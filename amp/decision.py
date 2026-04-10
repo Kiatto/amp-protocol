@@ -15,7 +15,7 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Any, Dict
 
 from amp.models import Decision
@@ -56,7 +56,7 @@ def build_decision_record(
         raise ValueError(f"explanation must be a dict, got {type(explanation)}")
 
     return {
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(UTC).isoformat(),
         "outcome": outcome,
         "intent": intent,
         "gap": gap,

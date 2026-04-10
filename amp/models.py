@@ -154,7 +154,9 @@ class Decision:
     brand: Optional[Dict[str, str]] = field(default=None)
 
     def __post_init__(self):
-        if self.decision not in self.ALLOWED_OUTCOMES:
+        # Performance Optimization: Use class-level ALLOWED_OUTCOMES to avoid
+        # instance lookup overhead.
+        if self.decision not in Decision.ALLOWED_OUTCOMES:
             raise ValueError(f"Invalid decision outcome: {self.decision}")
 
         if not isinstance(self.reason, str):
