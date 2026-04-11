@@ -15,7 +15,7 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Any, Dict
 
 from amp.config import MAX_COLLECTION_SIZE
@@ -68,7 +68,7 @@ def build_decision_record(
         raise ValueError(f"explanation exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
     return {
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(UTC).isoformat(),
         "outcome": outcome,
         "intent": intent,
         "gap": gap,
