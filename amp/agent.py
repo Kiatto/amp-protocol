@@ -20,9 +20,37 @@ Design decisions:
 """
 
 from amp.models import UserInput, Decision
-from amp.intent import detect_intent, identify_gap
+from amp.intent import (
+    detect_intent,
+    identify_gap,
+    INTENT_UNKNOWN,
+    INTENT_EFFICIENCY_GAP,
+    GAP_NONE,
+)
 from amp.brand import select_eligible_brand
 from amp.config import INTENT_THRESHOLD, PES_THRESHOLD
+
+# ⚡ Bolt: Performance Optimization
+# Pre-instantiate common Decision outcomes to avoid redundant object creation,
+# validation, and string formatting in the hot path. Identity checks (is) are
+# used to return these constants when the decision flow hits a known static exit.
+DECISION_NEUTRAL_UNKNOWN_INTENT = Decision(
+    decision="NEUTRAL",
+    pes=0.0,
+    scores={"intent": INTENT_UNKNOWN.confidence, "gap": 0.0, "timing": 0.0},
+    reason=f"Intent confidence {INTENT_UNKNOWN.confidence:.2f} below threshold {INTENT_THRESHOLD}",
+)
+
+DECISION_INSIGHT_NO_GAP_EFFICIENCY = Decision(
+    decision="INSIGHT_ONLY",
+    pes=0.0,
+    scores={
+        "intent": INTENT_EFFICIENCY_GAP.confidence,
+        "gap": GAP_NONE.severity,
+        "timing": 0.0,
+    },
+    reason="No actionable gap detected",
+)
 
 
 def amp_agent_flow(user_input: UserInput) -> Decision:
@@ -41,6 +69,11 @@ def amp_agent_flow(user_input: UserInput) -> Decision:
 
     # --- Gate 1: intent threshold ---
     if i_score < INTENT_THRESHOLD:
+        # ⚡ Bolt: Performance Optimization
+        # Return pre-instantiated decision for the common 'UNKNOWN' intent.
+        if intent is INTENT_UNKNOWN:
+            return DECISION_NEUTRAL_UNKNOWN_INTENT
+
         return Decision(
             decision="NEUTRAL",
             pes=0.0,
@@ -56,6 +89,11 @@ def amp_agent_flow(user_input: UserInput) -> Decision:
 
     # --- Gate 2: gap must exist ---
     if g_score == 0:
+        # ⚡ Bolt: Performance Optimization
+        # Return pre-instantiated decision for the common 'none' gap + efficiency intent.
+        if gap is GAP_NONE and intent is INTENT_EFFICIENCY_GAP:
+            return DECISION_INSIGHT_NO_GAP_EFFICIENCY
+
         return Decision(
             decision="INSIGHT_ONLY",
             pes=0.0,
