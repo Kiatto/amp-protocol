@@ -429,3 +429,39 @@ def test_audit_log_redaction(tmp_path):
         assert entry["input"]["text_length"] == 14
         assert entry["input"]["context"]["user_id"] == 123
         assert entry["trace_id"] == trace_id
+
+
+def test_deprecated_audit_log_validation(tmp_path):
+    log_file = tmp_path / "test_deprecated_decisions_validation.jsonl"
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr("amp.audit.LOG_PATH", log_file)
+
+        valid_trace_id = "test-trace"
+        valid_user_input = {"text": "test"}
+        valid_decision = {"outcome": "NEUTRAL"}
+
+        # Valid call
+        deprecated_write_decision_log(valid_trace_id, valid_user_input, valid_decision)
+
+        # trace_id validation
+        with pytest.raises(ValueError, match="trace_id must be a string"):
+            deprecated_write_decision_log(123, valid_user_input, valid_decision)  # type: ignore
+
+        with pytest.raises(ValueError, match="trace_id exceeds maximum length"):
+            deprecated_write_decision_log("A" * (MAX_ID_LENGTH + 1), valid_user_input, valid_decision)
+
+        # user_input validation
+        with pytest.raises(ValueError, match="user_input must be a dict"):
+            deprecated_write_decision_log(valid_trace_id, "not-a-dict", valid_decision)  # type: ignore
+
+        with pytest.raises(ValueError, match="user_input exceeds maximum size"):
+            oversized_input = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
+            deprecated_write_decision_log(valid_trace_id, oversized_input, valid_decision)
+
+        # decision validation
+        with pytest.raises(ValueError, match="decision must be a dict"):
+            deprecated_write_decision_log(valid_trace_id, valid_user_input, "not-a-dict")  # type: ignore
+
+        with pytest.raises(ValueError, match="decision exceeds maximum size"):
+            oversized_decision = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
+            deprecated_write_decision_log(valid_trace_id, valid_user_input, oversized_decision)
