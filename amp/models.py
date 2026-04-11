@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, ClassVar
-from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH
+from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_COLLECTION_SIZE
 
 
 @dataclass(slots=True)
@@ -73,6 +73,10 @@ class Brand:
             raise ValueError(
                 f"allowed_intents must be a list, got {type(self.allowed_intents)}"
             )
+        if len(self.allowed_intents) > MAX_COLLECTION_SIZE:
+            raise ValueError(
+                f"allowed_intents exceeds maximum size of {MAX_COLLECTION_SIZE}"
+            )
         for intent in self.allowed_intents:
             if not isinstance(intent, str):
                 raise ValueError(f"Intent name must be a string, got {type(intent)}")
@@ -84,6 +88,10 @@ class Brand:
         # Pre-calculate the brand info dictionary
         self.brand_info = {"name": self.name, "domain": self.domain}
 
+        if len(self.assets) > MAX_COLLECTION_SIZE:
+            raise ValueError(
+                f"assets exceeds maximum size of {MAX_COLLECTION_SIZE}"
+            )
         for asset in self.assets:
             if not isinstance(asset, str):
                 raise ValueError(f"Asset path must be a string, got {type(asset)}")
@@ -166,6 +174,8 @@ class Decision:
 
         if not isinstance(self.scores, dict):
             raise ValueError(f"scores must be a dict, got {type(self.scores)}")
+        if len(self.scores) > MAX_COLLECTION_SIZE:
+            raise ValueError(f"scores exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
         for name, score in self.scores.items():
             if not isinstance(name, str):
@@ -188,5 +198,8 @@ class Decision:
         if not (0.0 <= self.pes <= 1.0):
             raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
 
-        if self.brand is not None and not isinstance(self.brand, dict):
-            raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")
+        if self.brand is not None:
+            if not isinstance(self.brand, dict):
+                raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")
+            if len(self.brand) > MAX_COLLECTION_SIZE:
+                raise ValueError(f"brand exceeds maximum size of {MAX_COLLECTION_SIZE}")

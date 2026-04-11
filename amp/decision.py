@@ -18,6 +18,7 @@ Design decisions:
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from amp.config import MAX_COLLECTION_SIZE
 from amp.models import Decision
 
 
@@ -48,12 +49,23 @@ def build_decision_record(
 
     if not isinstance(intent, dict):
         raise ValueError(f"intent must be a dict, got {type(intent)}")
+    if len(intent) > MAX_COLLECTION_SIZE:
+        raise ValueError(f"intent exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
     if not isinstance(gap, dict):
         raise ValueError(f"gap must be a dict, got {type(gap)}")
+    if len(gap) > MAX_COLLECTION_SIZE:
+        raise ValueError(f"gap exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
     if not isinstance(context, dict):
         raise ValueError(f"context must be a dict, got {type(context)}")
+    if len(context) > MAX_COLLECTION_SIZE:
+        raise ValueError(f"context exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
     if not isinstance(explanation, dict):
         raise ValueError(f"explanation must be a dict, got {type(explanation)}")
+    if len(explanation) > MAX_COLLECTION_SIZE:
+        raise ValueError(f"explanation exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
     return {
         "ts": datetime.now(timezone.utc).isoformat(),
