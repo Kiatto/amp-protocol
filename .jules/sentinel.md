@@ -7,3 +7,8 @@
 **Vulnerability:** Scattered missing type and length validations in `Brand` and `Decision` models, and the logging utility.
 **Learning:** Defense-in-depth requires that *every* field in a public-facing or core data structure be validated, not just the most obvious ones (like user text). Omissions in secondary fields (like brand domains or score names) can still be exploited for log-spoofing or memory-based DoS.
 **Prevention:** Use a "validation-by-default" approach in `__post_init__` for all dataclass fields and strictly type-check all arguments at the entry points of utility functions.
+
+## 2025-05-16 - Hardening Deprecated Logging Paths
+**Vulnerability:** The deprecated `amp.audit` module lacked the strict input validation implemented in its successor, creating a weak point for resource exhaustion or type-based crashes if legacy paths were still reachable.
+**Learning:** Security hardening must be applied across the entire codebase, including deprecated modules, until they are fully removed. Inconsistent validation across similar components can be exploited by targeting the weakest implementation.
+**Prevention:** Ensure that security updates are applied to all functional versions of a component (legacy and current) or explicitly remove the vulnerable legacy code.
