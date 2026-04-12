@@ -205,3 +205,13 @@ class Decision:
                 raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")
             if len(self.brand) > MAX_COLLECTION_SIZE:
                 raise ValueError(f"brand exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
+            for k, v in self.brand.items():
+                if not isinstance(k, str):
+                    raise ValueError(f"Brand dictionary keys must be strings, got {type(k)}")
+                if len(k) > MAX_ID_LENGTH:
+                    raise ValueError(f"Brand dictionary key '{k}' exceeds maximum length of {MAX_ID_LENGTH}")
+                if not isinstance(v, str):
+                    raise ValueError(f"Brand dictionary values must be strings, got {type(v)}")
+                if len(v) > MAX_TEXT_LENGTH:
+                    raise ValueError(f"Brand dictionary value for '{k}' exceeds maximum length of {MAX_TEXT_LENGTH}")
