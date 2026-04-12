@@ -18,6 +18,10 @@
 **Learning:** Even simple built-in function calls like `max(x, 0.0)` contribute measurable overhead in Python's hot paths. If the range of a value is already guaranteed by strict dataclass validation, removing these redundant checks can reduce latency without sacrificing safety.
 **Action:** Trust internal contract validations (like dataclass `__post_init__`) to avoid re-validating the same constraints in downstream execution logic.
 
+## 2026-04-10 - [Pre-instantiating Complex Dataclasses for Common Exits]
+**Learning:** For functions returning complex objects (like `Decision` with nested dictionaries and strict `__post_init__` validation), pre-instantiating common static outcomes at the module level can reduce path latency by over 90% (~15x speedup). Identity checks (`is`) provide an extremely fast branch to these cached results.
+**Action:** Identify predictable or static exit points in hot paths and replace dynamic object instantiation with module-level constants.
+
 ## 2026-04-09 - [Micro-optimizations vs. Readability]
 **Learning:** Extreme micro-optimizations like binding global constants to local variables or inlining high-level abstractions can yield measurable performance gains in Python but significantly degrade code readability and maintainability. These are often rejected during code review as "code smells."
 **Action:** Balance performance gains with readability. Prioritize optimizations that simplify logic (like removing redundant calls) over those that obfuscate it for marginal nanosecond wins.
