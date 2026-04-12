@@ -75,4 +75,8 @@ def write_decision_log(
     }
 
     with LOG_PATH.open("a", encoding="utf-8") as fh:
-        fh.write(_ENCODE(entry) + "\n")
+        # ⚡ Bolt: Performance Optimization
+        # Use two write() calls instead of string concatenation to avoid
+        # unnecessary string allocation in the logging hot path.
+        fh.write(_ENCODE(entry))
+        fh.write("\n")
