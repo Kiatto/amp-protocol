@@ -25,3 +25,7 @@
 ## 2026-04-09 - [Micro-optimizations vs. Readability]
 **Learning:** Extreme micro-optimizations like binding global constants to local variables or inlining high-level abstractions can yield measurable performance gains in Python but significantly degrade code readability and maintainability. These are often rejected during code review as "code smells."
 **Action:** Balance performance gains with readability. Prioritize optimizations that simplify logic (like removing redundant calls) over those that obfuscate it for marginal nanosecond wins.
+
+## 2026-04-12 - [Optimizing I/O Bound Hot Paths]
+**Learning:** In high-volume logging scenarios, string concatenation like `fh.write(data + "\n")` causes unnecessary memory allocations for temporary strings. Splitting into two `write()` calls (`write(data); write("\n")`) eliminates this overhead. Additionally, reusing a module-level `JSONEncoder` instead of calling `json.dumps()` (which instantiates an encoder internally) significantly reduces CPU cycles.
+**Action:** In performance-critical logging or serialization paths, avoid string concatenation inside `write()` calls and prefer pre-instantiated encoders or templates.
