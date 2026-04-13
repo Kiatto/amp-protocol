@@ -29,3 +29,15 @@
 ## 2026-04-12 - [Optimizing I/O Bound Hot Paths]
 **Learning:** In high-volume logging scenarios, string concatenation like `fh.write(data + "\n")` causes unnecessary memory allocations for temporary strings. Splitting into two `write()` calls (`write(data); write("\n")`) eliminates this overhead. Additionally, reusing a module-level `JSONEncoder` instead of calling `json.dumps()` (which instantiates an encoder internally) significantly reduces CPU cycles.
 **Action:** In performance-critical logging or serialization paths, avoid string concatenation inside `write()` calls and prefer pre-instantiated encoders or templates.
+
+## 2025-05-21 - [EAFP for Hot Path Lookups]
+**Learning:** In Python, using a `try...except KeyError` block (Easier to Ask Forgiveness than Permission) is ~12% faster than using `.get()` followed by a `None` check when a key is expected to be present in most cases. Direct dictionary access is an opcode-level operation that avoids the overhead of a method call.
+**Action:** In hot paths where keys are guaranteed by upstream validation, prefer direct access or `try...except` over safe retrieval methods like `.get()`.
+
+## 2025-05-22 - [Frozenset for Static Membership]
+**Learning:** While `set` and `frozenset` have similar O(1) lookup speeds, `frozenset` is immutable and slightly more memory-efficient. It is the semantically correct choice for static configuration constants and prevents accidental modification.
+**Action:** Use `frozenset` for ClassVar constants used in membership testing to optimize memory and enforce immutability.
+
+## 2025-05-23 - [Readability vs. Brittle Micro-optimizations]
+**Learning:** Manual string/JSON construction can yield minor performance gains by avoiding dictionary allocations, but it is often rejected as "brittle" and unmaintainable. In Python, the cost of multiple `write()` calls and the risk of schema desynchronization usually outweigh the nanosecond wins of avoiding a single `json.dumps()` call.
+**Action:** Prioritize maintainability and schema robustness. Only resort to manual serialization if it's the primary, proven bottleneck and can be implemented without sacrificing code clarity.
