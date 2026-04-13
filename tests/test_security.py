@@ -280,6 +280,24 @@ def test_write_decision_log_validation(tmp_path):
         with pytest.raises(ValueError, match="decision_record must be a dict"):
             write_decision_log("trace", "not-a-dict")  # type: ignore
 
+        # Missing 'ts' key
+        with pytest.raises(ValueError, match="decision_record missing 'ts' field"):
+            write_decision_log("trace-1", {"outcome": "NEUTRAL"})
+
+        # Oversized record
+        oversized_record = {f"k{i}": "v" for i in range(MAX_COLLECTION_SIZE + 1)}
+        oversized_record["ts"] = "2024-01-01"
+        with pytest.raises(ValueError, match="decision_record exceeds maximum size"):
+            write_decision_log("trace-1", oversized_record)
+
+        # Invalid ts type
+        with pytest.raises(ValueError, match="timestamp 'ts' must be a string"):
+            write_decision_log("trace-1", {"ts": 123, "outcome": "NEUTRAL"})
+
+        # Oversized ts string
+        with pytest.raises(ValueError, match="timestamp 'ts' exceeds maximum length"):
+            write_decision_log("trace-1", {"ts": "A" * (MAX_TEXT_LENGTH + 1), "outcome": "NEUTRAL"})
+
 
 def test_decision_context_validation():
     # Valid
@@ -314,6 +332,37 @@ def test_decision_brand_validation():
             scores=scores,
             reason="test",
             brand="not-a-dict",  # type: ignore
+        )
+
+    # Content validation for brand dict
+    # Non-string value
+    with pytest.raises(ValueError, match="Brand dictionary values must be strings"):
+        Decision(
+            decision="HANDSHAKE_ALLOWED",
+            pes=0.5,
+            scores=scores,
+            reason="test",
+            brand={"name": 123}  # type: ignore
+        )
+
+    # Oversized key
+    with pytest.raises(ValueError, match="Brand dictionary key '.*' exceeds maximum length"):
+        Decision(
+            decision="HANDSHAKE_ALLOWED",
+            pes=0.5,
+            scores=scores,
+            reason="test",
+            brand={"A" * (MAX_ID_LENGTH + 1): "value"}
+        )
+
+    # Oversized value
+    with pytest.raises(ValueError, match="Brand dictionary value for '.*' exceeds maximum length"):
+        Decision(
+            decision="HANDSHAKE_ALLOWED",
+            pes=0.5,
+            scores=scores,
+            reason="test",
+            brand={"name": "A" * (MAX_TEXT_LENGTH + 1)}
         )
 
 

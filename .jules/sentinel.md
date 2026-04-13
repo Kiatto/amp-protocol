@@ -12,3 +12,8 @@
 **Vulnerability:** The deprecated `amp.audit` module lacked the strict input validation implemented in its successor, creating a weak point for resource exhaustion or type-based crashes if legacy paths were still reachable.
 **Learning:** Security hardening must be applied across the entire codebase, including deprecated modules, until they are fully removed. Inconsistent validation across similar components can be exploited by targeting the weakest implementation.
 **Prevention:** Ensure that security updates are applied to all functional versions of a component (legacy and current) or explicitly remove the vulnerable legacy code.
+
+## 2025-05-17 - Resource Exhaustion and Data Integrity in Logging and Models
+**Vulnerability:** `write_decision_log` in `amp/decision_logger.py` could crash on missing `ts` fields and lacked collection size limits. The `Decision` model in `amp/models.py` did not validate the contents of the `brand` dictionary.
+**Learning:** Hardening internal structures against malformed data is critical even when data is expected to come from internal protocol flows. Missing keys or oversized values in "metadata" fields (like brand info or timestamps) can lead to service instability (crashes) or log-based DoS.
+**Prevention:** Always use safe retrieval (e.g., `.get()`) with explicit validation for mandatory fields in logging layers. Enforce size and type constraints on all nested dictionary contents in core data models.

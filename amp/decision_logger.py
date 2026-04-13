@@ -24,7 +24,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from amp.config import MAX_ID_LENGTH
+from amp.config import MAX_ID_LENGTH, MAX_TEXT_LENGTH, MAX_COLLECTION_SIZE
 
 LOG_PATH = Path("logs/decisions.jsonl")
 
@@ -60,16 +60,23 @@ def write_decision_log(
         raise ValueError(
             f"decision_record must be a dict, got {type(decision_record)}"
         )
+    if len(decision_record) > MAX_COLLECTION_SIZE:
+        raise ValueError(f"decision_record exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
     # ⚡ Bolt: Performance Optimization
     # Reuse the timestamp from the decision record to avoid a redundant syscall.
     # This also ensures the log entry and the record have perfectly synchronized timestamps.
 
+    ts = decision_record.get("ts")
+    if ts is None:
+        raise ValueError("decision_record missing 'ts' field")
+    if not isinstance(ts, str):
+        raise ValueError(f"timestamp 'ts' must be a string, got {type(ts)}")
+    if len(ts) > MAX_TEXT_LENGTH:
+        raise ValueError(f"timestamp 'ts' exceeds maximum length of {MAX_TEXT_LENGTH}")
+
     entry = {
-        # Performance Optimization: Use direct key access instead of .get()
-        # as the timestamp is guaranteed to exist in a valid decision record
-        # produced by build_decision_record().
-        "ts": decision_record["ts"],
+        "ts": ts,
         "trace_id": trace_id,
         "record": decision_record,
     }
