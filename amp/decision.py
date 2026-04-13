@@ -16,10 +16,40 @@ Design decisions:
 """
 
 from datetime import datetime, timezone, UTC
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
-from amp.config import MAX_COLLECTION_SIZE
+from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH
 from amp.models import Decision
+
+
+def _validate_collection(data: Any, path: str = "") -> None:
+    """
+    Recursively validate that a collection (dict or list) only contains
+    allowed types and adheres to size/length limits.
+    """
+    if isinstance(data, dict):
+        if len(data) > MAX_COLLECTION_SIZE:
+            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+        for k, v in data.items():
+            if not isinstance(k, str):
+                raise ValueError(f"Dictionary key at {path} must be a string, got {type(k)}")
+            if len(k) > MAX_ID_LENGTH:
+                raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
+            new_path = f"{path}.{k}" if path else k
+            _validate_collection(v, new_path)
+    elif isinstance(data, list):
+        if len(data) > MAX_COLLECTION_SIZE:
+            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+        for i, item in enumerate(data):
+            new_path = f"{path}[{i}]"
+            _validate_collection(item, new_path)
+    elif isinstance(data, str):
+        if len(data) > MAX_TEXT_LENGTH:
+            raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
+    elif isinstance(data, (int, float, bool)) or data is None:
+        pass
+    else:
+        raise ValueError(f"Unsupported type {type(data)} at {path or 'root'}")
 
 
 def build_decision_record(
@@ -49,23 +79,19 @@ def build_decision_record(
 
     if not isinstance(intent, dict):
         raise ValueError(f"intent must be a dict, got {type(intent)}")
-    if len(intent) > MAX_COLLECTION_SIZE:
-        raise ValueError(f"intent exceeds maximum size of {MAX_COLLECTION_SIZE}")
+    _validate_collection(intent, "intent")
 
     if not isinstance(gap, dict):
         raise ValueError(f"gap must be a dict, got {type(gap)}")
-    if len(gap) > MAX_COLLECTION_SIZE:
-        raise ValueError(f"gap exceeds maximum size of {MAX_COLLECTION_SIZE}")
+    _validate_collection(gap, "gap")
 
     if not isinstance(context, dict):
         raise ValueError(f"context must be a dict, got {type(context)}")
-    if len(context) > MAX_COLLECTION_SIZE:
-        raise ValueError(f"context exceeds maximum size of {MAX_COLLECTION_SIZE}")
+    _validate_collection(context, "context")
 
     if not isinstance(explanation, dict):
         raise ValueError(f"explanation must be a dict, got {type(explanation)}")
-    if len(explanation) > MAX_COLLECTION_SIZE:
-        raise ValueError(f"explanation exceeds maximum size of {MAX_COLLECTION_SIZE}")
+    _validate_collection(explanation, "explanation")
 
     return {
         "ts": datetime.now(UTC).isoformat(),

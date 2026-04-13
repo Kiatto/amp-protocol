@@ -395,6 +395,43 @@ def test_build_decision_record_validation():
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, "not-a-dict")  # type: ignore
 
 
+def test_build_decision_record_deep_validation():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+    valid_explanation = {"gate": "passed"}
+
+    # Oversized nested string
+    with pytest.raises(ValueError, match="String at intent.name exceeds MAX_TEXT_LENGTH"):
+        build_decision_record("NEUTRAL", {"name": "A" * (MAX_TEXT_LENGTH + 1)}, valid_gap, valid_context, valid_explanation)
+
+    # Oversized nested key
+    with pytest.raises(ValueError, match="Dictionary key '.*' at intent exceeds MAX_ID_LENGTH"):
+        build_decision_record("NEUTRAL", {"A" * (MAX_ID_LENGTH + 1): "val"}, valid_gap, valid_context, valid_explanation)
+
+    # Nested collection limit
+    with pytest.raises(ValueError, match="Collection at explanation.details exceeds MAX_COLLECTION_SIZE"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"details": [i for i in range(MAX_COLLECTION_SIZE + 1)]}
+        )
+
+    # Unsupported type in deep structure
+    with pytest.raises(ValueError, match="Unsupported type .* at explanation.meta"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"meta": set([1, 2, 3])}
+        )
+
+
 def test_collection_size_limits():
     # Brand: allowed_intents limit
     with pytest.raises(ValueError, match="allowed_intents exceeds maximum size"):
@@ -441,19 +478,19 @@ def test_build_decision_record_collection_limits():
     oversized_item = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
 
     # intent limit
-    with pytest.raises(ValueError, match="intent exceeds maximum size"):
+    with pytest.raises(ValueError, match="Collection at intent exceeds MAX_COLLECTION_SIZE"):
         build_decision_record("NEUTRAL", oversized_item, valid_item, valid_item, valid_item)
 
     # gap limit
-    with pytest.raises(ValueError, match="gap exceeds maximum size"):
+    with pytest.raises(ValueError, match="Collection at gap exceeds MAX_COLLECTION_SIZE"):
         build_decision_record("NEUTRAL", valid_item, oversized_item, valid_item, valid_item)
 
     # context limit
-    with pytest.raises(ValueError, match="context exceeds maximum size"):
+    with pytest.raises(ValueError, match="Collection at context exceeds MAX_COLLECTION_SIZE"):
         build_decision_record("NEUTRAL", valid_item, valid_item, oversized_item, valid_item)
 
     # explanation limit
-    with pytest.raises(ValueError, match="explanation exceeds maximum size"):
+    with pytest.raises(ValueError, match="Collection at explanation exceeds MAX_COLLECTION_SIZE"):
         build_decision_record("NEUTRAL", valid_item, valid_item, valid_item, oversized_item)
 
 
