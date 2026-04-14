@@ -148,12 +148,15 @@ class UserInput:
 
 @dataclass(slots=True)
 class Decision:
-    # Allowed outcomes are defined as a ClassVar to improve maintainability
-    ALLOWED_OUTCOMES: ClassVar[set[str]] = {
-        "NEUTRAL",
-        "INSIGHT_ONLY",
-        "HANDSHAKE_ALLOWED",
-    }
+    # ⚡ Bolt: Performance Optimization
+    # Use frozenset for static membership checks to optimize memory and lookup speed.
+    ALLOWED_OUTCOMES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "NEUTRAL",
+            "INSIGHT_ONLY",
+            "HANDSHAKE_ALLOWED",
+        }
+    )
 
     decision: str
     pes: float
