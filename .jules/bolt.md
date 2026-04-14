@@ -41,3 +41,7 @@
 ## 2025-05-23 - [Readability vs. Brittle Micro-optimizations]
 **Learning:** Manual string/JSON construction can yield minor performance gains by avoiding dictionary allocations, but it is often rejected as "brittle" and unmaintainable. In Python, the cost of multiple `write()` calls and the risk of schema desynchronization usually outweigh the nanosecond wins of avoiding a single `json.dumps()` call.
 **Action:** Prioritize maintainability and schema robustness. Only resort to manual serialization if it's the primary, proven bottleneck and can be implemented without sacrificing code clarity.
+
+## 2025-05-24 - [Recursion Unrolling and Lazy Path Construction]
+**Learning:** In recursive validation functions, f-string path formatting and function call overhead for every leaf node can dominate the execution time. Unrolling the recursion for common scalar types and strings allows for "lazy" path construction, where the expensive string formatting only occurs for nested collections or error states.
+**Action:** Identify recursive traversal patterns and inline leaf-node processing to avoid redundant stack frames and string allocations.
