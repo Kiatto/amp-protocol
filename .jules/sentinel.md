@@ -17,3 +17,13 @@
 **Vulnerability:** `write_decision_log` in `amp/decision_logger.py` could crash on missing `ts` fields and lacked collection size limits. The `Decision` model in `amp/models.py` did not validate the contents of the `brand` dictionary.
 **Learning:** Hardening internal structures against malformed data is critical even when data is expected to come from internal protocol flows. Missing keys or oversized values in "metadata" fields (like brand info or timestamps) can lead to service instability (crashes) or log-based DoS.
 **Prevention:** Always use safe retrieval (e.g., `.get()`) with explicit validation for mandatory fields in logging layers. Enforce size and type constraints on all nested dictionary contents in core data models.
+
+## 2025-05-18 - Nested Data DoS in Decision Records
+**Vulnerability:**  only performed shallow validation of input dictionaries. Maliciously large strings or collections nested within , , , or  could bypass length limits, leading to memory exhaustion or disk-space DoS during logging.
+**Learning:** Shallow validation is insufficient for recursive data structures. If a dictionary is eventually serialized and logged, every nested element must be bounded.
+**Prevention:** Implement recursive validation for all nested collections that originate from external input or are destined for persistent storage.
+
+## 2025-05-18 - Nested Data DoS in Decision Records
+**Vulnerability:** `build_decision_record` only performed shallow validation of input dictionaries. Maliciously large strings or collections nested within `intent`, `gap`, `context`, or `explanation` could bypass length limits, leading to memory exhaustion or disk-space DoS during logging.
+**Learning:** Shallow validation is insufficient for recursive data structures. If a dictionary is eventually serialized and logged, every nested element must be bounded.
+**Prevention:** Implement recursive validation for all nested collections that originate from external input or are destined for persistent storage.
