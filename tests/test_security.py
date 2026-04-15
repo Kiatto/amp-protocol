@@ -2,7 +2,7 @@ import pytest
 import json
 from pathlib import Path
 from amp.models import UserInput, Decision, DecisionContext, Intent, Gap, Brand
-from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_COLLECTION_SIZE
+from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_COLLECTION_SIZE, MAX_DEPTH
 from amp.audit import write_decision_log as deprecated_write_decision_log
 from amp.decision_logger import write_decision_log
 
@@ -294,9 +294,18 @@ def test_write_decision_log_validation(tmp_path):
         with pytest.raises(ValueError, match="timestamp 'ts' must be a string"):
             write_decision_log("trace-1", {"ts": 123, "outcome": "NEUTRAL"})
 
-        # Oversized ts string
-        with pytest.raises(ValueError, match="timestamp 'ts' exceeds maximum length"):
+        # Oversized ts string (caught by deep validation first)
+        with pytest.raises(ValueError, match="String at record.ts exceeds MAX_TEXT_LENGTH"):
             write_decision_log("trace-1", {"ts": "A" * (MAX_TEXT_LENGTH + 1), "outcome": "NEUTRAL"})
+
+        # Deep validation in write_decision_log
+        with pytest.raises(ValueError, match="Collection at record.nested.* exceeds MAX_DEPTH"):
+            deep_record = {"ts": "2024-01-01"}
+            curr = deep_record
+            for _ in range(MAX_DEPTH + 1):
+                curr["nested"] = {}
+                curr = curr["nested"]
+            write_decision_log("trace", deep_record)
 
 
 def test_decision_context_validation():
@@ -430,6 +439,24 @@ def test_build_decision_record_deep_validation():
             valid_context,
             {"meta": set([1, 2, 3])}
         )
+
+
+def test_build_decision_record_recursion_limit():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    # Deeply nested explanation
+    deep_explanation = {}
+    curr = deep_explanation
+    for _ in range(MAX_DEPTH + 1):
+        curr["a"] = {}
+        curr = curr["a"]
+
+    with pytest.raises(ValueError, match="Collection at explanation.* exceeds MAX_DEPTH"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, deep_explanation)
 
 
 def test_collection_size_limits():

@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from amp.config import MAX_ID_LENGTH, MAX_TEXT_LENGTH, MAX_COLLECTION_SIZE
+from amp.decision import _validate_collection
 
 LOG_PATH = Path("logs/decisions.jsonl")
 
@@ -62,6 +63,9 @@ def write_decision_log(
         )
     if len(decision_record) > MAX_COLLECTION_SIZE:
         raise ValueError(f"decision_record exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
+    # Deep validation of the record to ensure all nested data is bounded.
+    _validate_collection(decision_record, "record")
 
     # ⚡ Bolt: Performance Optimization
     # Using try/except KeyError is ~12% faster than .get() for the hot path

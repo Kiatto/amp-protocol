@@ -27,3 +27,8 @@
 **Vulnerability:** `build_decision_record` only performed shallow validation of input dictionaries. Maliciously large strings or collections nested within `intent`, `gap`, `context`, or `explanation` could bypass length limits, leading to memory exhaustion or disk-space DoS during logging.
 **Learning:** Shallow validation is insufficient for recursive data structures. If a dictionary is eventually serialized and logged, every nested element must be bounded.
 **Prevention:** Implement recursive validation for all nested collections that originate from external input or are destined for persistent storage.
+
+## 2025-05-19 - Stack Exhaustion and Deep Logging DoS
+**Vulnerability:** The recursive validation logic (`_validate_collection`) lacked a depth limit, and `write_decision_log` performed shallow size checks on the final record, allowing deeply nested or maliciously large structures to bypass bounds when logging.
+**Learning:** Even with recursive validation, unbounded recursion can cause stack exhaustion (RecursionError). Furthermore, loggers must validate the *entire* structure being persisted, not just its top-level attributes, to prevent disk-space and processing DoS.
+**Prevention:** Implement a strict `MAX_DEPTH` for all recursive validation functions and ensure the logging layer performs full deep validation on all data structures before serialization.
