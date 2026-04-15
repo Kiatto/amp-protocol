@@ -18,31 +18,68 @@ Design decisions:
 from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Union
 
-from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH
+from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
 from amp.models import Decision
 
 
-def _validate_collection(data: Any, path: str = "") -> None:
+def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
     """
     Recursively validate that a collection (dict or list) only contains
     allowed types and adheres to size/length limits.
     """
+    # ⚡ Bolt: Performance Optimization
+    # Recursion depth check to prevent stack exhaustion and resource-based DoS.
+    if depth > MAX_DEPTH:
+        raise ValueError(f"Maximum recursion depth {MAX_DEPTH} exceeded at {path}")
+
     if isinstance(data, dict):
         if len(data) > MAX_COLLECTION_SIZE:
-            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+            raise ValueError(
+                f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
+            )
         for k, v in data.items():
             if not isinstance(k, str):
-                raise ValueError(f"Dictionary key at {path} must be a string, got {type(k)}")
+                raise ValueError(
+                    f"Dictionary key at {path} must be a string, got {type(k)}"
+                )
             if len(k) > MAX_ID_LENGTH:
                 raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
+
+            # ⚡ Bolt: Performance Optimization
+            # Unrolled recursion for leaf nodes and lazy path construction.
+            # Scalar types and strings are validated inline to avoid redundant calls.
+            if isinstance(v, (int, float, bool)) or v is None:
+                continue
+
+            if isinstance(v, str):
+                if len(v) > MAX_TEXT_LENGTH:
+                    new_path = f"{path}.{k}" if path else k
+                    raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
+                continue
+
             new_path = f"{path}.{k}" if path else k
-            _validate_collection(v, new_path)
+            _validate_collection(v, new_path, depth + 1)
+
     elif isinstance(data, list):
         if len(data) > MAX_COLLECTION_SIZE:
-            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+            raise ValueError(
+                f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
+            )
         for i, item in enumerate(data):
+            # ⚡ Bolt: Performance Optimization
+            # Leaf node unrolling for lists.
+            if isinstance(item, (int, float, bool)) or item is None:
+                continue
+
+            if isinstance(item, str):
+                if len(item) > MAX_TEXT_LENGTH:
+                    new_path = f"{path}[{i}]"
+                    raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
+                continue
+
             new_path = f"{path}[{i}]"
-            _validate_collection(item, new_path)
+            _validate_collection(item, new_path, depth + 1)
+
     elif isinstance(data, str):
         if len(data) > MAX_TEXT_LENGTH:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
