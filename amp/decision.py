@@ -39,48 +39,68 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             raise ValueError(
                 f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
             )
-        for k, v in data.items():
-            if not isinstance(k, str):
-                raise ValueError(
-                    f"Dictionary key at {path} must be a string, got {type(k)}"
-                )
-            if len(k) > MAX_ID_LENGTH:
-                raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
+        # ⚡ Bolt: Performance Optimization
+        # Loop unswitching based on path presence to avoid conditional path formatting
+        # inside the hot validation loop. This reduces branch mispredictions and
+        # string processing overhead for top-level collections.
+        if path:
+            for k, v in data.items():
+                if not isinstance(k, str):
+                    raise ValueError(f"Dictionary key at {path} must be a string, got {type(k)}")
+                if len(k) > MAX_ID_LENGTH:
+                    raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
 
-            # ⚡ Bolt: Performance Optimization
-            # Unrolled recursion for leaf nodes and lazy path construction.
-            # Scalar types and strings are validated inline to avoid redundant calls.
-            if isinstance(v, (int, float, bool)) or v is None:
-                continue
+                if isinstance(v, (int, float, bool)) or v is None:
+                    continue
 
-            if isinstance(v, str):
-                if len(v) > MAX_TEXT_LENGTH:
-                    new_path = f"{path}.{k}" if path else k
-                    raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
-                continue
+                if isinstance(v, str):
+                    if len(v) > MAX_TEXT_LENGTH:
+                        raise ValueError(f"String at {path}.{k} exceeds MAX_TEXT_LENGTH")
+                    continue
 
-            new_path = f"{path}.{k}" if path else k
-            _validate_collection(v, new_path, depth + 1)
+                _validate_collection(v, f"{path}.{k}", depth + 1)
+        else:
+            for k, v in data.items():
+                if not isinstance(k, str):
+                    raise ValueError(f"Dictionary key at root must be a string, got {type(k)}")
+                if len(k) > MAX_ID_LENGTH:
+                    raise ValueError(f"Dictionary key '{k}' at root exceeds MAX_ID_LENGTH")
+
+                if isinstance(v, (int, float, bool)) or v is None:
+                    continue
+
+                if isinstance(v, str):
+                    if len(v) > MAX_TEXT_LENGTH:
+                        raise ValueError(f"String at {k} exceeds MAX_TEXT_LENGTH")
+                    continue
+
+                _validate_collection(v, k, depth + 1)
 
     elif isinstance(data, list):
         if len(data) > MAX_COLLECTION_SIZE:
             raise ValueError(
                 f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
             )
-        for i, item in enumerate(data):
-            # ⚡ Bolt: Performance Optimization
-            # Leaf node unrolling for lists.
-            if isinstance(item, (int, float, bool)) or item is None:
-                continue
-
-            if isinstance(item, str):
-                if len(item) > MAX_TEXT_LENGTH:
-                    new_path = f"{path}[{i}]"
-                    raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
-                continue
-
-            new_path = f"{path}[{i}]"
-            _validate_collection(item, new_path, depth + 1)
+        # ⚡ Bolt: Performance Optimization
+        # Loop unswitching for lists to minimize path formatting overhead.
+        if path:
+            for i, item in enumerate(data):
+                if isinstance(item, (int, float, bool)) or item is None:
+                    continue
+                if isinstance(item, str):
+                    if len(item) > MAX_TEXT_LENGTH:
+                        raise ValueError(f"String at {path}[{i}] exceeds MAX_TEXT_LENGTH")
+                    continue
+                _validate_collection(item, f"{path}[{i}]", depth + 1)
+        else:
+            for i, item in enumerate(data):
+                if isinstance(item, (int, float, bool)) or item is None:
+                    continue
+                if isinstance(item, str):
+                    if len(item) > MAX_TEXT_LENGTH:
+                        raise ValueError(f"String at [{i}] exceeds MAX_TEXT_LENGTH")
+                    continue
+                _validate_collection(item, f"[{i}]", depth + 1)
 
     elif isinstance(data, str):
         if len(data) > MAX_TEXT_LENGTH:
