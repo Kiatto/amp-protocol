@@ -57,6 +57,7 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
     elif isinstance(data, str):
         if len(data) > MAX_TEXT_LENGTH:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
+
     elif isinstance(data, (int, float, bool)) or data is None:
         pass
     else:
