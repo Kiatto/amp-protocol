@@ -32,3 +32,8 @@
 **Vulnerability:** The recursive validation logic in `_validate_collection` lacked a depth limit, allowing maliciously crafted deeply nested dictionaries or lists to trigger a `RecursionError` (stack overflow), leading to a Denial of Service (DoS).
 **Learning:** Recursion without a depth limit is a security risk even if individual collection sizes are bounded. Stack space is a finite resource that must be protected when processing potentially hostile nested data.
 **Prevention:** Always enforce a `MAX_DEPTH` constant in recursive validation functions to fail fast before exhausting the call stack.
+
+## 2025-05-20 - Data Integrity and JSON Compliance for Numerical Data
+**Vulnerability:** The recursive validation logic in `_validate_collection` allowed non-finite floats (`NaN`, `Infinity`). While valid in Python, these values are not standard-compliant in JSON and can cause parsing failures or logic bypasses in downstream systems.
+**Learning:** Numerical validation must go beyond type checks. In security-sensitive protocols that rely on structured data exchange (JSON), values that are technically valid in the source language but invalid in the exchange format must be rejected at the boundary.
+**Prevention:** Always use `math.isfinite()` when validating float inputs that will be serialized to JSON or used in security-critical calculations.

@@ -15,6 +15,7 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
+import math
 from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Union
 
@@ -51,6 +52,11 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # Unrolled recursion for leaf nodes and lazy path construction.
             # Scalar types and strings are validated inline to avoid redundant calls.
             if isinstance(v, (int, float, bool)) or v is None:
+                # Security: Reject non-finite floats (NaN, Inf) to prevent invalid JSON
+                # and potential logic bypasses in downstream systems.
+                if isinstance(v, float) and not math.isfinite(v):
+                    new_path = f"{path}.{k}" if path else k
+                    raise ValueError(f"Non-finite float at {new_path}")
                 continue
 
             if isinstance(v, str):
@@ -71,6 +77,11 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # ⚡ Bolt: Performance Optimization
             # Leaf node unrolling for lists.
             if isinstance(item, (int, float, bool)) or item is None:
+                # Security: Reject non-finite floats to ensure standard-compliant JSON
+                # and data integrity for auditing.
+                if isinstance(item, float) and not math.isfinite(item):
+                    new_path = f"{path}[{i}]"
+                    raise ValueError(f"Non-finite float at {new_path}")
                 continue
 
             if isinstance(item, str):
@@ -87,7 +98,9 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
 
     elif isinstance(data, (int, float, bool)) or data is None:
-        pass
+        # Security: Final check for non-finite floats in scalar positions.
+        if isinstance(data, float) and not math.isfinite(data):
+            raise ValueError(f"Non-finite float at {path or 'root'}")
     else:
         raise ValueError(f"Unsupported type {type(data)} at {path or 'root'}")
 
