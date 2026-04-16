@@ -18,15 +18,20 @@ Design decisions:
 from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Union
 
-from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH
+from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
 from amp.models import Decision
 
 
-def _validate_collection(data: Any, path: str = "") -> None:
+def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
     """
     Recursively validate that a collection (dict or list) only contains
     allowed types and adheres to size/length limits.
     """
+    if depth > MAX_DEPTH:
+        raise ValueError(
+            f"Maximum nesting depth of {MAX_DEPTH} exceeded at {path or 'root'}"
+        )
+
     # ⚡ Bolt: Performance Optimization
     # Optimized the hot path by constructing paths lazily. For common scalar
     # types (int, float, bool, None), we skip the expensive f-string formatting
@@ -48,7 +53,7 @@ def _validate_collection(data: Any, path: str = "") -> None:
             # Performance Optimization: Handle strings and scalars inline to avoid
             # redundant recursive calls and expensive path construction for leaf nodes.
             if isinstance(v, (dict, list)):
-                _validate_collection(v, f"{path}.{k}" if path else k)
+                _validate_collection(v, f"{path}.{k}" if path else k, depth + 1)
             elif isinstance(v, str):
                 if len(v) > MAX_TEXT_LENGTH:
                     err_path = f"{path}.{k}" if path else k
@@ -67,7 +72,7 @@ def _validate_collection(data: Any, path: str = "") -> None:
         for i, item in enumerate(data):
             # Performance Optimization: Handle strings and scalars inline for lists.
             if isinstance(item, (dict, list)):
-                _validate_collection(item, f"{path}[{i}]")
+                _validate_collection(item, f"{path}[{i}]", depth + 1)
             elif isinstance(item, str):
                 if len(item) > MAX_TEXT_LENGTH:
                     err_path = f"{path}[{i}]"

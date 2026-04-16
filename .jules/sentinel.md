@@ -27,3 +27,8 @@
 **Vulnerability:** `build_decision_record` only performed shallow validation of input dictionaries. Maliciously large strings or collections nested within `intent`, `gap`, `context`, or `explanation` could bypass length limits, leading to memory exhaustion or disk-space DoS during logging.
 **Learning:** Shallow validation is insufficient for recursive data structures. If a dictionary is eventually serialized and logged, every nested element must be bounded.
 **Prevention:** Implement recursive validation for all nested collections that originate from external input or are destined for persistent storage.
+
+## 2025-05-19 - Stack Exhaustion via Deeply Nested Collections
+**Vulnerability:** The recursive validation logic in `_validate_collection` lacked a depth limit, allowing maliciously crafted deeply nested dictionaries or lists to trigger a `RecursionError` (stack overflow), leading to a Denial of Service (DoS).
+**Learning:** Recursion without a depth limit is a security risk even if individual collection sizes are bounded. Stack space is a finite resource that must be protected when processing potentially hostile nested data.
+**Prevention:** Always enforce a `MAX_DEPTH` constant in recursive validation functions to fail fast before exhausting the call stack.
