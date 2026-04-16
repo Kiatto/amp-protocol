@@ -28,7 +28,12 @@
 **Learning:** Shallow validation is insufficient for recursive data structures. If a dictionary is eventually serialized and logged, every nested element must be bounded.
 **Prevention:** Implement recursive validation for all nested collections that originate from external input or are destined for persistent storage.
 
-## 2025-05-19 - Stack Exhaustion and Deep Logging DoS
-**Vulnerability:** The recursive validation logic (`_validate_collection`) lacked a depth limit, and `write_decision_log` performed shallow size checks on the final record, allowing deeply nested or maliciously large structures to bypass bounds when logging.
-**Learning:** Even with recursive validation, unbounded recursion can cause stack exhaustion (RecursionError). Furthermore, loggers must validate the *entire* structure being persisted, not just its top-level attributes, to prevent disk-space and processing DoS.
-**Prevention:** Implement a strict `MAX_DEPTH` for all recursive validation functions and ensure the logging layer performs full deep validation on all data structures before serialization.
+## 2025-05-19 - Stack Exhaustion via Deeply Nested Collections
+**Vulnerability:** The recursive validation logic in `_validate_collection` lacked a depth limit, allowing maliciously crafted deeply nested dictionaries or lists to trigger a `RecursionError` (stack overflow), leading to a Denial of Service (DoS).
+**Learning:** Recursion without a depth limit is a security risk even if individual collection sizes are bounded. Stack space is a finite resource that must be protected when processing potentially hostile nested data.
+**Prevention:** Always enforce a `MAX_DEPTH` constant in recursive validation functions to fail fast before exhausting the call stack.
+
+## 2025-05-19 - Deep Logging DoS and Bypassing Bounds
+**Vulnerability:** `write_decision_log` performed shallow size checks on the final record, allowing deeply nested or maliciously large structures to bypass bounds when logging.
+**Learning:** Loggers must validate the *entire* structure being persisted, not just its top-level attributes, to prevent disk-space and processing DoS.
+**Prevention:** Ensure the logging layer performs full deep validation on all data structures before serialization.

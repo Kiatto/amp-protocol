@@ -28,21 +28,29 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
     allowed types and adheres to size/length limits.
     """
     if depth > MAX_DEPTH:
-        raise ValueError(f"Collection at {path or 'root'} exceeds MAX_DEPTH")
+        raise ValueError(
+            f"Maximum nesting depth of {MAX_DEPTH} exceeded at {path or 'root'}"
+        )
 
     if isinstance(data, dict):
         if len(data) > MAX_COLLECTION_SIZE:
-            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+            raise ValueError(
+                f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
+            )
         for k, v in data.items():
             if not isinstance(k, str):
-                raise ValueError(f"Dictionary key at {path} must be a string, got {type(k)}")
+                raise ValueError(
+                    f"Dictionary key at {path} must be a string, got {type(k)}"
+                )
             if len(k) > MAX_ID_LENGTH:
                 raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
             new_path = f"{path}.{k}" if path else k
             _validate_collection(v, new_path, depth + 1)
     elif isinstance(data, list):
         if len(data) > MAX_COLLECTION_SIZE:
-            raise ValueError(f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE")
+            raise ValueError(
+                f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
+            )
         for i, item in enumerate(data):
             new_path = f"{path}[{i}]"
             _validate_collection(item, new_path, depth + 1)

@@ -299,7 +299,7 @@ def test_write_decision_log_validation(tmp_path):
             write_decision_log("trace-1", {"ts": "A" * (MAX_TEXT_LENGTH + 1), "outcome": "NEUTRAL"})
 
         # Deep validation in write_decision_log
-        with pytest.raises(ValueError, match="Collection at record.nested.* exceeds MAX_DEPTH"):
+        with pytest.raises(ValueError, match="Maximum nesting depth of .* exceeded at record.nested"):
             deep_record = {"ts": "2024-01-01"}
             curr = deep_record
             for _ in range(MAX_DEPTH + 1):
@@ -455,7 +455,7 @@ def test_build_decision_record_recursion_limit():
         curr["a"] = {}
         curr = curr["a"]
 
-    with pytest.raises(ValueError, match="Collection at explanation.* exceeds MAX_DEPTH"):
+    with pytest.raises(ValueError, match="Maximum nesting depth of .* exceeded at explanation"):
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, deep_explanation)
 
 
