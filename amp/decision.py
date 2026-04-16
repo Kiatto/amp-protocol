@@ -30,7 +30,9 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
     # ⚡ Bolt: Performance Optimization
     # Recursion depth check to prevent stack exhaustion and resource-based DoS.
     if depth > MAX_DEPTH:
-        raise ValueError(f"Maximum recursion depth {MAX_DEPTH} exceeded at {path}")
+        raise ValueError(
+            f"Maximum nesting depth of {MAX_DEPTH} exceeded at {path or 'root'}"
+        )
 
     if isinstance(data, dict):
         if len(data) > MAX_COLLECTION_SIZE:
