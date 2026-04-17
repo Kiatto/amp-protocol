@@ -16,6 +16,7 @@ Design decisions:
 """
 
 from datetime import datetime, timezone, UTC
+import math
 from typing import Any, Dict, List, Union
 
 from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
@@ -50,7 +51,13 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # ⚡ Bolt: Performance Optimization
             # Unrolled recursion for leaf nodes and lazy path construction.
             # Scalar types and strings are validated inline to avoid redundant calls.
-            if isinstance(v, (int, float, bool)) or v is None:
+            if isinstance(v, bool) or v is None:
+                continue
+
+            if isinstance(v, (int, float)):
+                if not math.isfinite(v):
+                    new_path = f"{path}.{k}" if path else k
+                    raise ValueError(f"Non-finite number at {new_path}")
                 continue
 
             if isinstance(v, str):
@@ -70,7 +77,13 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
         for i, item in enumerate(data):
             # ⚡ Bolt: Performance Optimization
             # Leaf node unrolling for lists.
-            if isinstance(item, (int, float, bool)) or item is None:
+            if isinstance(item, bool) or item is None:
+                continue
+
+            if isinstance(item, (int, float)):
+                if not math.isfinite(item):
+                    new_path = f"{path}[{i}]"
+                    raise ValueError(f"Non-finite number at {new_path}")
                 continue
 
             if isinstance(item, str):
@@ -86,8 +99,11 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
         if len(data) > MAX_TEXT_LENGTH:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
 
-    elif isinstance(data, (int, float, bool)) or data is None:
+    elif isinstance(data, bool) or data is None:
         pass
+    elif isinstance(data, (int, float)):
+        if not math.isfinite(data):
+            raise ValueError(f"Non-finite number at {path or 'root'}")
     else:
         raise ValueError(f"Unsupported type {type(data)} at {path or 'root'}")
 
