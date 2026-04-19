@@ -55,6 +55,13 @@ def test_decision_pes_validation():
     with pytest.raises(ValueError, match="PES must be between 0.0 and 1.0"):
         Decision(decision="NEUTRAL", pes=1.1, scores=scores, reason="test")
 
+    # Non-finite PES
+    with pytest.raises(ValueError, match=r"PES must be between 0.0 and 1.0 \(finite\)"):
+        Decision(decision="NEUTRAL", pes=float("nan"), scores=scores, reason="test")
+
+    with pytest.raises(ValueError, match=r"PES must be between 0.0 and 1.0 \(finite\)"):
+        Decision(decision="NEUTRAL", pes=float("inf"), scores=scores, reason="test")
+
 
 def test_decision_allowed_outcomes():
     scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
@@ -85,6 +92,13 @@ def test_intent_name_validation():
     with pytest.raises(ValueError, match="Confidence must be a number"):
         Intent(name="VALID", confidence="not-a-number")  # type: ignore
 
+    # Non-finite confidence
+    with pytest.raises(ValueError, match=r"Confidence must be between 0.0 and 1.0 \(finite\)"):
+        Intent(name="VALID", confidence=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Confidence must be between 0.0 and 1.0 \(finite\)"):
+        Intent(name="VALID", confidence=float("inf"))
+
 
 def test_gap_type_validation():
     # Valid
@@ -101,6 +115,13 @@ def test_gap_type_validation():
     # Wrong severity type
     with pytest.raises(ValueError, match="Severity must be a number"):
         Gap(type="cognitive", severity="not-a-number")  # type: ignore
+
+    # Non-finite severity
+    with pytest.raises(ValueError, match=r"Severity must be between 0.0 and 1.0 \(finite\)"):
+        Gap(type="cognitive", severity=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Severity must be between 0.0 and 1.0 \(finite\)"):
+        Gap(type="cognitive", severity=float("inf"))
 
 
 def test_brand_security():
@@ -234,6 +255,15 @@ def test_decision_scores_validation():
             reason="test",
         )
 
+    # Non-finite score
+    with pytest.raises(ValueError, match=r"Score 'intent' must be between 0.0 and 1.0 \(finite\)"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"intent": float("nan"), "gap": 0.5, "timing": 0.5},
+            reason="test",
+        )
+
     # Invalid score type
     with pytest.raises(ValueError, match="Score 'intent' must be a number"):
         Decision(
@@ -319,6 +349,13 @@ def test_decision_context_validation():
     # Invalid range
     with pytest.raises(ValueError, match="Proximity score must be between 0.0 and 1.0"):
         DecisionContext(proximity_score=1.1)
+
+    # Non-finite proximity score
+    with pytest.raises(ValueError, match=r"Proximity score must be between 0.0 and 1.0 \(finite\)"):
+        DecisionContext(proximity_score=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Proximity score must be between 0.0 and 1.0 \(finite\)"):
+        DecisionContext(proximity_score=float("inf"))
 
 
 def test_decision_brand_validation():
@@ -438,6 +475,25 @@ def test_build_decision_record_deep_validation():
             valid_gap,
             valid_context,
             {"meta": set([1, 2, 3])}
+        )
+
+    # Non-finite in nested structure
+    with pytest.raises(ValueError, match="Non-finite numeric value at explanation.val"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"val": float("nan")}
+        )
+
+    with pytest.raises(ValueError, match=r"Non-finite numeric value at explanation.list\[0\]"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"list": [float("inf")]}
         )
 
 
