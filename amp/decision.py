@@ -40,23 +40,23 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
                 f"Collection at {path or 'root'} exceeds MAX_COLLECTION_SIZE"
             )
         for k, v in data.items():
-            if not isinstance(k, str):
-                raise ValueError(
-                    f"Dictionary key at {path} must be a string, got {type(k)}"
-                )
-            if len(k) > MAX_ID_LENGTH:
+            # ⚡ Bolt: Performance Optimization
+            # Combined key type and length check to reduce branching.
+            if not isinstance(k, str) or len(k) > MAX_ID_LENGTH:
+                if not isinstance(k, str):
+                    raise ValueError(f"Dictionary key at {path} must be a string, got {type(k)}")
                 raise ValueError(f"Dictionary key '{k}' at {path} exceeds MAX_ID_LENGTH")
 
             # ⚡ Bolt: Performance Optimization
-            # Unrolled recursion for leaf nodes and lazy path construction.
-            # Scalar types and strings are validated inline to avoid redundant calls.
-            if isinstance(v, (int, float, bool)) or v is None:
-                continue
-
+            # Reordered type checks to prioritize strings (most common leaf node)
+            # and simplified tuple (bool is a subclass of int in Python).
             if isinstance(v, str):
                 if len(v) > MAX_TEXT_LENGTH:
                     new_path = f"{path}.{k}" if path else k
                     raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
+                continue
+
+            if isinstance(v, (int, float)) or v is None:
                 continue
 
             new_path = f"{path}.{k}" if path else k
@@ -69,14 +69,14 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             )
         for i, item in enumerate(data):
             # ⚡ Bolt: Performance Optimization
-            # Leaf node unrolling for lists.
-            if isinstance(item, (int, float, bool)) or item is None:
-                continue
-
+            # Prioritize strings and simplify scalar tuple in list unrolling.
             if isinstance(item, str):
                 if len(item) > MAX_TEXT_LENGTH:
                     new_path = f"{path}[{i}]"
                     raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
+                continue
+
+            if isinstance(item, (int, float)) or item is None:
                 continue
 
             new_path = f"{path}[{i}]"
@@ -86,7 +86,7 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
         if len(data) > MAX_TEXT_LENGTH:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
 
-    elif isinstance(data, (int, float, bool)) or data is None:
+    elif isinstance(data, (int, float)) or data is None:
         pass
     else:
         raise ValueError(f"Unsupported type {type(data)} at {path or 'root'}")
