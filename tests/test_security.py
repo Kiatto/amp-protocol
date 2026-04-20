@@ -55,6 +55,13 @@ def test_decision_pes_validation():
     with pytest.raises(ValueError, match="PES must be between 0.0 and 1.0"):
         Decision(decision="NEUTRAL", pes=1.1, scores=scores, reason="test")
 
+    # Non-finite PES
+    with pytest.raises(ValueError, match=r"PES must be between 0.0 and 1.0 \(finite\)"):
+        Decision(decision="NEUTRAL", pes=float("nan"), scores=scores, reason="test")
+
+    with pytest.raises(ValueError, match=r"PES must be between 0.0 and 1.0 \(finite\)"):
+        Decision(decision="NEUTRAL", pes=float("inf"), scores=scores, reason="test")
+
 
 def test_decision_allowed_outcomes():
     scores = {"intent": 0.5, "gap": 0.5, "timing": 0.5}
@@ -85,6 +92,13 @@ def test_intent_name_validation():
     with pytest.raises(ValueError, match="Confidence must be a number"):
         Intent(name="VALID", confidence="not-a-number")  # type: ignore
 
+    # Non-finite confidence
+    with pytest.raises(ValueError, match=r"Confidence must be between 0.0 and 1.0 \(finite\)"):
+        Intent(name="VALID", confidence=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Confidence must be between 0.0 and 1.0 \(finite\)"):
+        Intent(name="VALID", confidence=float("inf"))
+
 
 def test_gap_type_validation():
     # Valid
@@ -101,6 +115,13 @@ def test_gap_type_validation():
     # Wrong severity type
     with pytest.raises(ValueError, match="Severity must be a number"):
         Gap(type="cognitive", severity="not-a-number")  # type: ignore
+
+    # Non-finite severity
+    with pytest.raises(ValueError, match=r"Severity must be between 0.0 and 1.0 \(finite\)"):
+        Gap(type="cognitive", severity=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Severity must be between 0.0 and 1.0 \(finite\)"):
+        Gap(type="cognitive", severity=float("inf"))
 
 
 def test_brand_security():
@@ -234,6 +255,15 @@ def test_decision_scores_validation():
             reason="test",
         )
 
+    # Non-finite score
+    with pytest.raises(ValueError, match=r"Score 'intent' must be between 0.0 and 1.0 \(finite\)"):
+        Decision(
+            decision="NEUTRAL",
+            pes=0.5,
+            scores={"intent": float("nan"), "gap": 0.5, "timing": 0.5},
+            reason="test",
+        )
+
     # Invalid score type
     with pytest.raises(ValueError, match="Score 'intent' must be a number"):
         Decision(
@@ -319,6 +349,13 @@ def test_decision_context_validation():
     # Invalid range
     with pytest.raises(ValueError, match="Proximity score must be between 0.0 and 1.0"):
         DecisionContext(proximity_score=1.1)
+
+    # Non-finite proximity score
+    with pytest.raises(ValueError, match=r"Proximity score must be between 0.0 and 1.0 \(finite\)"):
+        DecisionContext(proximity_score=float("nan"))
+
+    with pytest.raises(ValueError, match=r"Proximity score must be between 0.0 and 1.0 \(finite\)"):
+        DecisionContext(proximity_score=float("inf"))
 
 
 def test_decision_brand_validation():
@@ -440,6 +477,25 @@ def test_build_decision_record_deep_validation():
             {"meta": set([1, 2, 3])}
         )
 
+    # Non-finite in nested structure
+    with pytest.raises(ValueError, match="Non-finite numeric value at explanation.val"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"val": float("nan")}
+        )
+
+    with pytest.raises(ValueError, match=r"Non-finite numeric value at explanation.list\[0\]"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"list": [float("inf")]}
+        )
+
 
 def test_build_decision_record_recursion_limit():
     from amp.decision import build_decision_record
@@ -457,6 +513,22 @@ def test_build_decision_record_recursion_limit():
 
     with pytest.raises(ValueError, match="Maximum nesting depth of .* exceeded at explanation"):
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, deep_explanation)
+
+
+def test_build_decision_record_non_finite_floats():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    # NaN in dict
+    with pytest.raises(ValueError, match="Non-finite float at explanation.score"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"score": float("nan")})
+
+    # Infinity in list
+    with pytest.raises(ValueError, match="Non-finite float at explanation.scores\[1\]"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"scores": [1.0, float("inf")]})
 
 
 def test_collection_size_limits():
@@ -578,3 +650,36 @@ def test_deprecated_audit_log_validation(tmp_path):
         with pytest.raises(ValueError, match="decision exceeds maximum size"):
             oversized_decision = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
             deprecated_write_decision_log(valid_trace_id, valid_user_input, oversized_decision)
+
+
+def test_non_finite_number_validation():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    # NaN in explanation
+    with pytest.raises(ValueError, match="Non-finite number at explanation.score"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"score": float("nan")},
+        )
+
+    # Infinity in list
+    with pytest.raises(ValueError, match=r"Non-finite number at explanation.values\[1\]"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"values": [1.0, float("inf"), 3.0]},
+        )
+
+    # Non-finite number at root level validation (direct call)
+    from amp.decision import _validate_collection
+    with pytest.raises(ValueError, match="Non-finite number at root"):
+        _validate_collection(float("nan"))

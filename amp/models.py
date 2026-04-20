@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, ClassVar
 from amp.config import MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_COLLECTION_SIZE
@@ -16,11 +17,13 @@ class Intent:
 
         if not isinstance(self.confidence, (int, float)):
             raise ValueError(f"Confidence must be a number, got {type(self.confidence)}")
+        if not math.isfinite(self.confidence):
+            raise ValueError(f"Confidence must be a finite number, got {self.confidence}")
 
         # Strict validation as per memory instructions
-        if not (0.0 <= self.confidence <= 1.0):
+        if not (math.isfinite(self.confidence) and 0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                f"Confidence must be between 0.0 and 1.0, got {self.confidence}"
+                f"Confidence must be between 0.0 and 1.0 (finite), got {self.confidence}"
             )
 
 
@@ -37,11 +40,13 @@ class Gap:
 
         if not isinstance(self.severity, (int, float)):
             raise ValueError(f"Severity must be a number, got {type(self.severity)}")
+        if not math.isfinite(self.severity):
+            raise ValueError(f"Severity must be a finite number, got {self.severity}")
 
         # Strict validation as per memory instructions
-        if not (0.0 <= self.severity <= 1.0):
+        if not (math.isfinite(self.severity) and 0.0 <= self.severity <= 1.0):
             raise ValueError(
-                f"Severity must be between 0.0 and 1.0, got {self.severity}"
+                f"Severity must be between 0.0 and 1.0 (finite), got {self.severity}"
             )
 
 
@@ -119,10 +124,14 @@ class DecisionContext:
             raise ValueError(
                 f"Proximity score must be a number, got {type(self.proximity_score)}"
             )
-        # Strict validation as per memory instructions
-        if not (0.0 <= self.proximity_score <= 1.0):
+        if not math.isfinite(self.proximity_score):
             raise ValueError(
-                f"Proximity score must be between 0.0 and 1.0, got {self.proximity_score}"
+                f"Proximity score must be a finite number, got {self.proximity_score}"
+            )
+        # Strict validation as per memory instructions
+        if not (math.isfinite(self.proximity_score) and 0.0 <= self.proximity_score <= 1.0):
+            raise ValueError(
+                f"Proximity score must be between 0.0 and 1.0 (finite), got {self.proximity_score}"
             )
 
 
@@ -182,34 +191,35 @@ class Decision:
         if len(self.scores) > MAX_COLLECTION_SIZE:
             raise ValueError(f"scores exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
+        # ⚡ Bolt: Performance Optimization
+        # Inline validation for scores and brand to reduce attribute lookup overhead.
         for name, score in self.scores.items():
             if not isinstance(name, str):
                 raise ValueError(f"Score name must be a string, got {type(name)}")
             if len(name) > MAX_ID_LENGTH:
-                raise ValueError(
-                    f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}"
-                )
+                raise ValueError(f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}")
             if not isinstance(score, (int, float)):
                 raise ValueError(f"Score '{name}' must be a number, got {type(score)}")
-            if not (0.0 <= score <= 1.0):
+            if not (math.isfinite(score) and 0.0 <= score <= 1.0):
                 raise ValueError(
-                    f"Score '{name}' must be between 0.0 and 1.0, got {score}"
+                    f"Score '{name}' must be between 0.0 and 1.0 (finite), got {score}"
                 )
 
         if not isinstance(self.pes, (int, float)):
             raise ValueError(f"PES must be a number, got {type(self.pes)}")
 
         # Strict validation as per memory instructions
-        if not (0.0 <= self.pes <= 1.0):
-            raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
+        if not (math.isfinite(self.pes) and 0.0 <= self.pes <= 1.0):
+            raise ValueError(f"PES must be between 0.0 and 1.0 (finite), got {self.pes}")
 
-        if self.brand is not None:
-            if not isinstance(self.brand, dict):
-                raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")
-            if len(self.brand) > MAX_COLLECTION_SIZE:
+        brand = self.brand
+        if brand is not None:
+            if not isinstance(brand, dict):
+                raise ValueError(f"brand must be a dict or None, got {type(brand)}")
+            if len(brand) > MAX_COLLECTION_SIZE:
                 raise ValueError(f"brand exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
-            for k, v in self.brand.items():
+            for k, v in brand.items():
                 if not isinstance(k, str):
                     raise ValueError(f"Brand dictionary keys must be strings, got {type(k)}")
                 if len(k) > MAX_ID_LENGTH:

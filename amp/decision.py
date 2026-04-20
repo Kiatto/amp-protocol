@@ -15,7 +15,9 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
+import math
 from datetime import datetime, timezone, UTC
+import math
 from typing import Any, Dict, List, Union
 
 from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
