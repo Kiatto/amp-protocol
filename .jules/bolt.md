@@ -49,3 +49,7 @@
 ## 2025-05-25 - [Type Check Prioritization in Hot Paths]
 **Learning:** In recursive validation of heterogeneous data structures (like JSON-like objects), reordering type checks to prioritize the most frequent types (e.g., `str` in decision records) can yield measurable performance wins by reducing the average number of failed `isinstance` checks per leaf node. Additionally, simplifying type tuples (e.g., removing `bool` when `int` is present) reduces lookup overhead.
 **Action:** Always analyze the expected distribution of data types in hot paths and order conditional checks to favor the most common cases. Use the most concise type tuples possible.
+
+## 2024-06-05 - [Redundant Finiteness Checks in Range Comparisons]
+**Learning:** In Python, the logical expression `math.isfinite(x) and 0.0 <= x <= 1.0` is redundant because range comparisons (`<`, `<=`, `>`, `>=`) involving `NaN` or `Inf` correctly return `False`. Explicitly calling `math.isfinite()` before a range check adds unnecessary function call overhead in high-frequency validation paths.
+**Action:** When validating that a numeric value falls within a specific finite range, use the range comparison alone to implicitly handle non-finite values and improve performance.
