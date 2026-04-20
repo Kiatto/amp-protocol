@@ -191,38 +191,33 @@ class Decision:
         if len(self.scores) > MAX_COLLECTION_SIZE:
             raise ValueError(f"scores exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
+        # ⚡ Bolt: Performance Optimization
+        # Inline validation for scores and brand to reduce attribute lookup overhead.
         for name, score in self.scores.items():
             if not isinstance(name, str):
                 raise ValueError(f"Score name must be a string, got {type(name)}")
             if len(name) > MAX_ID_LENGTH:
-                raise ValueError(
-                    f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}"
-                )
+                raise ValueError(f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}")
             if not isinstance(score, (int, float)):
                 raise ValueError(f"Score '{name}' must be a number, got {type(score)}")
             if not math.isfinite(score):
                 raise ValueError(f"Score '{name}' must be a finite number, got {score}")
             if not (0.0 <= score <= 1.0):
-                raise ValueError(
-                    f"Score '{name}' must be between 0.0 and 1.0, got {score}"
-                )
+                raise ValueError(f"Score '{name}' must be between 0.0 and 1.0, got {score}")
 
         if not isinstance(self.pes, (int, float)):
             raise ValueError(f"PES must be a number, got {type(self.pes)}")
-        if not math.isfinite(self.pes):
-            raise ValueError(f"PES must be a finite number, got {self.pes}")
-
-        # Strict validation as per memory instructions
         if not (0.0 <= self.pes <= 1.0):
             raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
 
-        if self.brand is not None:
-            if not isinstance(self.brand, dict):
-                raise ValueError(f"brand must be a dict or None, got {type(self.brand)}")
-            if len(self.brand) > MAX_COLLECTION_SIZE:
+        brand = self.brand
+        if brand is not None:
+            if not isinstance(brand, dict):
+                raise ValueError(f"brand must be a dict or None, got {type(brand)}")
+            if len(brand) > MAX_COLLECTION_SIZE:
                 raise ValueError(f"brand exceeds maximum size of {MAX_COLLECTION_SIZE}")
 
-            for k, v in self.brand.items():
+            for k, v in brand.items():
                 if not isinstance(k, str):
                     raise ValueError(f"Brand dictionary keys must be strings, got {type(k)}")
                 if len(k) > MAX_ID_LENGTH:
