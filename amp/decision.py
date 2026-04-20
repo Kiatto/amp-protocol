@@ -15,6 +15,7 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
+import math
 from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Union
 
@@ -107,7 +108,9 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
 
     elif isinstance(data, (int, float, bool)) or data is None:
-        pass
+        # Security: Final check for non-finite floats in scalar positions.
+        if isinstance(data, float) and not math.isfinite(data):
+            raise ValueError(f"Non-finite float at {path or 'root'}")
     else:
         raise ValueError(f"Unsupported type {type(data)} at {path or 'root'}")
 
