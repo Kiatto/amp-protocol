@@ -15,6 +15,7 @@ Design decisions:
   for auditability without depending on external logging infrastructure.
 """
 
+import math
 from datetime import datetime, timezone, UTC
 import math
 from typing import Any, Dict, List, Union
