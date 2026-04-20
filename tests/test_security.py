@@ -478,7 +478,7 @@ def test_build_decision_record_deep_validation():
         )
 
     # Non-finite in nested structure
-    with pytest.raises(ValueError, match="Non-finite numeric value at explanation.val"):
+    with pytest.raises(ValueError, match="Non-finite number at explanation.val"):
         build_decision_record(
             "NEUTRAL",
             valid_intent,
@@ -487,7 +487,7 @@ def test_build_decision_record_deep_validation():
             {"val": float("nan")}
         )
 
-    with pytest.raises(ValueError, match=r"Non-finite numeric value at explanation.list\[0\]"):
+    with pytest.raises(ValueError, match=r"Non-finite number at explanation.list\[0\]"):
         build_decision_record(
             "NEUTRAL",
             valid_intent,
@@ -523,11 +523,11 @@ def test_build_decision_record_non_finite_floats():
     valid_context = {"proximity_score": 0.7}
 
     # NaN in dict
-    with pytest.raises(ValueError, match="Non-finite float at explanation.score"):
+    with pytest.raises(ValueError, match="Non-finite number at explanation.score"):
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"score": float("nan")})
 
     # Infinity in list
-    with pytest.raises(ValueError, match="Non-finite float at explanation.scores\[1\]"):
+    with pytest.raises(ValueError, match=r"Non-finite number at explanation.scores\[1\]"):
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"scores": [1.0, float("inf")]})
 
 

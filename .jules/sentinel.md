@@ -37,3 +37,8 @@
 **Vulnerability:** The recursive validation logic in `_validate_collection` (used for decision records and logging) accepted `NaN` and `Infinity` values. While these are numeric types in Python, they are non-standard in JSON and can cause crashes or logic bypasses in downstream systems that consume the AMP protocol.
 **Learning:** Strict type checking for "numbers" (int/float) is insufficient if the system relies on standard JSON serialization or finite numeric logic. Malicious or malformed non-finite values can lead to unexpected state or Denial of Service (DoS) in components that do not expect them.
 **Prevention:** Always use `math.isfinite()` when validating numeric inputs that will be serialized to JSON or used in critical calculations. Check for `bool` and `None` before numeric types to avoid redundant checks, as booleans are subclasses of integers in Python.
+
+## 2026-04-19 - Standardized Numeric Finiteness Validation
+**Vulnerability:** Non-finite numeric values (NaN, Infinity) could bypass recursive collection validation, potentially causing serialization errors or protocol logic bypasses in downstream systems.
+**Learning:** Type-checking for `float` is insufficient for security-critical numeric gates. Malformed non-finite values are valid floats in Python but non-standard in JSON and can break arithmetic assumptions (e.g., `NaN != NaN`).
+**Prevention:** Implement `math.isfinite()` checks at all validation entry points for numeric data, especially within recursive collection scanners. Standardize error messages to ensure consistency between models and security tests.
