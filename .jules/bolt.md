@@ -46,6 +46,6 @@
 **Learning:** In recursive validation functions, unrolling the recursion for leaf nodes (scalars and strings) avoids significant function call overhead. Combined with lazy path construction (only formatting error strings when needed), this can reduce latency for typical data structures by ~45-50%. Enforcing a MAX_DEPTH also provides a critical security safeguard against stack exhaustion DoS.
 **Action:** When implementing recursive visitors or validators, handle common leaf types inline and only recurse for nested collections. Use lazy evaluation for informational strings like object paths.
 
-## 2024-05-25 - [Combined isinstance Checks for Leaf Nodes]
-**Learning:** In Python, calling `isinstance(v, (str, int, float, bool))` is measurably faster (~50%) than calling it separately for scalars and then for strings in a recursive validator. Combined with lazy path construction, this significantly reduces overhead for complex nested structures.
-**Action:** When validating heterogeneous collections, combine common leaf types into a single `isinstance` check to minimize function call overhead in the hot path.
+## 2025-05-25 - [Type Check Prioritization in Hot Paths]
+**Learning:** In recursive validation of heterogeneous data structures (like JSON-like objects), reordering type checks to prioritize the most frequent types (e.g., `str` in decision records) can yield measurable performance wins by reducing the average number of failed `isinstance` checks per leaf node. Additionally, simplifying type tuples (e.g., removing `bool` when `int` is present) reduces lookup overhead.
+**Action:** Always analyze the expected distribution of data types in hot paths and order conditional checks to favor the most common cases. Use the most concise type tuples possible.
