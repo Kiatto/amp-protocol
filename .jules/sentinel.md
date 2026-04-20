@@ -33,7 +33,7 @@
 **Learning:** Recursion without a depth limit is a security risk even if individual collection sizes are bounded. Stack space is a finite resource that must be protected when processing potentially hostile nested data.
 **Prevention:** Always enforce a `MAX_DEPTH` constant in recursive validation functions to fail fast before exhausting the call stack.
 
-## 2025-05-20 - Data Integrity and JSON Compliance for Numerical Data
-**Vulnerability:** The recursive validation logic in `_validate_collection` allowed non-finite floats (`NaN`, `Infinity`). While valid in Python, these values are not standard-compliant in JSON and can cause parsing failures or logic bypasses in downstream systems.
-**Learning:** Numerical validation must go beyond type checks. In security-sensitive protocols that rely on structured data exchange (JSON), values that are technically valid in the source language but invalid in the exchange format must be rejected at the boundary.
-**Prevention:** Always use `math.isfinite()` when validating float inputs that will be serialized to JSON or used in security-critical calculations.
+## 2025-05-20 - Non-Finite Number Vulnerability in JSON Serialization and Scoring
+**Vulnerability:** `NaN` and `Infinity` values could be injected into decision records, bypassing numeric range checks and producing non-standard JSON in logs.
+**Learning:** Python's `float('nan')` and `float('inf')` are valid floats but invalid in standard JSON and can behave unexpectedly in comparison-based security gates (e.g., `nan <= 1.0` is False, but `not (nan <= 1.0)` is True).
+**Prevention:** Always use `math.isfinite()` when validating numeric inputs that will be serialized to JSON or used in security-critical thresholds.
