@@ -459,6 +459,22 @@ def test_build_decision_record_recursion_limit():
         build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, deep_explanation)
 
 
+def test_build_decision_record_non_finite_floats():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    # NaN in dict
+    with pytest.raises(ValueError, match="Non-finite float at explanation.score"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"score": float("nan")})
+
+    # Infinity in list
+    with pytest.raises(ValueError, match="Non-finite float at explanation.scores\[1\]"):
+        build_decision_record("NEUTRAL", valid_intent, valid_gap, valid_context, {"scores": [1.0, float("inf")]})
+
+
 def test_collection_size_limits():
     # Brand: allowed_intents limit
     with pytest.raises(ValueError, match="allowed_intents exceeds maximum size"):
@@ -578,3 +594,36 @@ def test_deprecated_audit_log_validation(tmp_path):
         with pytest.raises(ValueError, match="decision exceeds maximum size"):
             oversized_decision = {f"k_{i}": i for i in range(MAX_COLLECTION_SIZE + 1)}
             deprecated_write_decision_log(valid_trace_id, valid_user_input, oversized_decision)
+
+
+def test_non_finite_number_validation():
+    from amp.decision import build_decision_record
+
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    # NaN in explanation
+    with pytest.raises(ValueError, match="Non-finite number at explanation.score"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"score": float("nan")},
+        )
+
+    # Infinity in list
+    with pytest.raises(ValueError, match=r"Non-finite number at explanation.values\[1\]"):
+        build_decision_record(
+            "NEUTRAL",
+            valid_intent,
+            valid_gap,
+            valid_context,
+            {"values": [1.0, float("inf"), 3.0]},
+        )
+
+    # Non-finite number at root level validation (direct call)
+    from amp.decision import _validate_collection
+    with pytest.raises(ValueError, match="Non-finite number at root"):
+        _validate_collection(float("nan"))
