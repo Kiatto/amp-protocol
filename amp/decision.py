@@ -52,7 +52,7 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # ⚡ Bolt: Performance Optimization
             # Unrolled recursion for leaf nodes and lazy path construction.
             # Scalar types and strings are validated inline to avoid redundant calls.
-            if isinstance(v, bool) or v is None:
+            if v is None or isinstance(v, bool):
                 continue
 
             if isinstance(v, (int, float)):
@@ -78,7 +78,7 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
         for i, item in enumerate(data):
             # ⚡ Bolt: Performance Optimization
             # Leaf node unrolling for lists.
-            if isinstance(item, bool) or item is None:
+            if item is None or isinstance(item, bool):
                 continue
 
             if isinstance(item, (int, float)):
@@ -100,7 +100,7 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
         if len(data) > MAX_TEXT_LENGTH:
             raise ValueError(f"String at {path or 'root'} exceeds MAX_TEXT_LENGTH")
 
-    elif isinstance(data, bool) or data is None:
+    elif data is None or isinstance(data, bool):
         pass
     elif isinstance(data, (int, float)):
         if not math.isfinite(data):

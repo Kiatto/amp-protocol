@@ -33,7 +33,7 @@
 **Learning:** Recursion without a depth limit is a security risk even if individual collection sizes are bounded. Stack space is a finite resource that must be protected when processing potentially hostile nested data.
 **Prevention:** Always enforce a `MAX_DEPTH` constant in recursive validation functions to fail fast before exhausting the call stack.
 
-## 2025-05-20 - Non-Finite Number Vulnerability in JSON Serialization and Scoring
-**Vulnerability:** `NaN` and `Infinity` values could be injected into decision records, bypassing numeric range checks and producing non-standard JSON in logs.
-**Learning:** Python's `float('nan')` and `float('inf')` are valid floats but invalid in standard JSON and can behave unexpectedly in comparison-based security gates (e.g., `nan <= 1.0` is False, but `not (nan <= 1.0)` is True).
-**Prevention:** Always use `math.isfinite()` when validating numeric inputs that will be serialized to JSON or used in security-critical thresholds.
+## 2026-04-18 - Non-finite Numeric Value (NaN/Infinity) Logic Bypass
+**Vulnerability:** The recursive validation logic in `_validate_collection` (used for decision records and logging) accepted `NaN` and `Infinity` values. While these are numeric types in Python, they are non-standard in JSON and can cause crashes or logic bypasses in downstream systems that consume the AMP protocol.
+**Learning:** Strict type checking for "numbers" (int/float) is insufficient if the system relies on standard JSON serialization or finite numeric logic. Malicious or malformed non-finite values can lead to unexpected state or Denial of Service (DoS) in components that do not expect them.
+**Prevention:** Always use `math.isfinite()` when validating numeric inputs that will be serialized to JSON or used in critical calculations. Check for `bool` and `None` before numeric types to avoid redundant checks, as booleans are subclasses of integers in Python.
