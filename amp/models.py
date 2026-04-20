@@ -21,9 +21,9 @@ class Intent:
             raise ValueError(f"Confidence must be a finite number, got {self.confidence}")
 
         # Strict validation as per memory instructions
-        if not (0.0 <= self.confidence <= 1.0):
+        if not (math.isfinite(self.confidence) and 0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                f"Confidence must be between 0.0 and 1.0, got {self.confidence}"
+                f"Confidence must be between 0.0 and 1.0 (finite), got {self.confidence}"
             )
 
 
@@ -44,9 +44,9 @@ class Gap:
             raise ValueError(f"Severity must be a finite number, got {self.severity}")
 
         # Strict validation as per memory instructions
-        if not (0.0 <= self.severity <= 1.0):
+        if not (math.isfinite(self.severity) and 0.0 <= self.severity <= 1.0):
             raise ValueError(
-                f"Severity must be between 0.0 and 1.0, got {self.severity}"
+                f"Severity must be between 0.0 and 1.0 (finite), got {self.severity}"
             )
 
 
@@ -129,9 +129,9 @@ class DecisionContext:
                 f"Proximity score must be a finite number, got {self.proximity_score}"
             )
         # Strict validation as per memory instructions
-        if not (0.0 <= self.proximity_score <= 1.0):
+        if not (math.isfinite(self.proximity_score) and 0.0 <= self.proximity_score <= 1.0):
             raise ValueError(
-                f"Proximity score must be between 0.0 and 1.0, got {self.proximity_score}"
+                f"Proximity score must be between 0.0 and 1.0 (finite), got {self.proximity_score}"
             )
 
 
@@ -200,15 +200,17 @@ class Decision:
                 raise ValueError(f"Score name '{name}' exceeds maximum length of {MAX_ID_LENGTH}")
             if not isinstance(score, (int, float)):
                 raise ValueError(f"Score '{name}' must be a number, got {type(score)}")
-            if not math.isfinite(score):
-                raise ValueError(f"Score '{name}' must be a finite number, got {score}")
-            if not (0.0 <= score <= 1.0):
-                raise ValueError(f"Score '{name}' must be between 0.0 and 1.0, got {score}")
+            if not (math.isfinite(score) and 0.0 <= score <= 1.0):
+                raise ValueError(
+                    f"Score '{name}' must be between 0.0 and 1.0 (finite), got {score}"
+                )
 
         if not isinstance(self.pes, (int, float)):
             raise ValueError(f"PES must be a number, got {type(self.pes)}")
-        if not (0.0 <= self.pes <= 1.0):
-            raise ValueError(f"PES must be between 0.0 and 1.0, got {self.pes}")
+
+        # Strict validation as per memory instructions
+        if not (math.isfinite(self.pes) and 0.0 <= self.pes <= 1.0):
+            raise ValueError(f"PES must be between 0.0 and 1.0 (finite), got {self.pes}")
 
         brand = self.brand
         if brand is not None:
