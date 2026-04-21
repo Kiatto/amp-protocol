@@ -17,8 +17,6 @@ class Intent:
 
         if not isinstance(self.confidence, (int, float)):
             raise ValueError(f"Confidence must be a number, got {type(self.confidence)}")
-        if not math.isfinite(self.confidence):
-            raise ValueError(f"Confidence must be a finite number, got {self.confidence}")
 
         # Strict validation as per memory instructions
         if not (math.isfinite(self.confidence) and 0.0 <= self.confidence <= 1.0):
@@ -40,8 +38,6 @@ class Gap:
 
         if not isinstance(self.severity, (int, float)):
             raise ValueError(f"Severity must be a number, got {type(self.severity)}")
-        if not math.isfinite(self.severity):
-            raise ValueError(f"Severity must be a finite number, got {self.severity}")
 
         # Strict validation as per memory instructions
         if not (math.isfinite(self.severity) and 0.0 <= self.severity <= 1.0):
@@ -123,10 +119,6 @@ class DecisionContext:
         if not isinstance(self.proximity_score, (int, float)):
             raise ValueError(
                 f"Proximity score must be a number, got {type(self.proximity_score)}"
-            )
-        if not math.isfinite(self.proximity_score):
-            raise ValueError(
-                f"Proximity score must be a finite number, got {self.proximity_score}"
             )
         # Strict validation as per memory instructions
         if not (math.isfinite(self.proximity_score) and 0.0 <= self.proximity_score <= 1.0):
