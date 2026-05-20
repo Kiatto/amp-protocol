@@ -652,6 +652,39 @@ def test_deprecated_audit_log_validation(tmp_path):
             deprecated_write_decision_log(valid_trace_id, valid_user_input, oversized_decision)
 
 
+def test_deprecated_audit_log_deep_validation(tmp_path):
+    log_file = tmp_path / "test_deprecated_deep_validation.jsonl"
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr("amp.audit.LOG_PATH", log_file)
+
+        valid_trace_id = "test-trace"
+
+        # Oversized nested string in user_input
+        with pytest.raises(ValueError, match="String at user_input.nested exceeds MAX_TEXT_LENGTH"):
+            deprecated_write_decision_log(
+                valid_trace_id,
+                {"nested": "A" * (MAX_TEXT_LENGTH + 1)},
+                {"outcome": "NEUTRAL"}
+            )
+
+        # Deeply nested user_input
+        with pytest.raises(ValueError, match="Maximum nesting depth of .* exceeded at user_input"):
+            deep_input = {}
+            curr = deep_input
+            for _ in range(MAX_DEPTH + 1):
+                curr["a"] = {}
+                curr = curr["a"]
+            deprecated_write_decision_log(valid_trace_id, deep_input, {"outcome": "NEUTRAL"})
+
+        # Oversized nested string in decision
+        with pytest.raises(ValueError, match="String at decision.nested exceeds MAX_TEXT_LENGTH"):
+            deprecated_write_decision_log(
+                valid_trace_id,
+                {"text": "test"},
+                {"nested": "A" * (MAX_TEXT_LENGTH + 1)}
+            )
+
+
 def test_non_finite_number_validation():
     from amp.decision import build_decision_record
 

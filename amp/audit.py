@@ -14,6 +14,7 @@ from datetime import datetime, UTC
 from typing import Dict, Any
 
 from amp.config import MAX_ID_LENGTH, MAX_COLLECTION_SIZE
+from amp.decision import _validate_collection
 
 LOG_PATH = Path("logs/decisions.jsonl")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,10 @@ def write_decision_log(
         raise ValueError(f"decision must be a dict, got {type(decision)}")
     if len(decision) > MAX_COLLECTION_SIZE:
         raise ValueError(f"decision exceeds maximum size of {MAX_COLLECTION_SIZE}")
+
+    # Deep validation of the collections to ensure all nested data is bounded.
+    _validate_collection(user_input, "user_input")
+    _validate_collection(decision, "decision")
 
     # Safely get text length, ensuring we don't crash on non-sized types
     user_text = user_input.get("text", "")
