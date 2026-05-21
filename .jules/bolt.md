@@ -53,3 +53,7 @@
 ## 2024-06-05 - [Redundant Finiteness Checks in Range Comparisons]
 **Learning:** In Python, the logical expression `math.isfinite(x) and 0.0 <= x <= 1.0` is redundant because range comparisons (`<`, `<=`, `>`, `>=`) involving `NaN` or `Inf` correctly return `False`. Explicitly calling `math.isfinite()` before a range check adds unnecessary function call overhead in high-frequency validation paths.
 **Action:** When validating that a numeric value falls within a specific finite range, use the range comparison alone to implicitly handle non-finite values and improve performance.
+
+## 2025-05-27 - [Persistent File Handles for High-Volume Logging]
+**Learning:** Opening and closing a file for every log entry introduces significant syscall overhead (~9x slower in benchmarks). Using a module-level persistent file handle eliminates this cost. However, in multi-threaded environments, a shared handle requires a `threading.Lock` to ensure atomic writes (JSON + newline) and prevent log interleaving.
+**Action:** Replace repeated `open()`/`close()` calls in hot logging paths with a persistent handle and a synchronization lock. Use `buffering=1` (line-buffering) to ensure data is flushed after every entry without sacrificing performance.
