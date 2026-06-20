@@ -57,3 +57,7 @@
 ## 2025-05-27 - [Persistent File Handles for High-Volume Logging]
 **Learning:** Opening and closing a file for every log entry introduces significant syscall overhead (~9x slower in benchmarks). Using a module-level persistent file handle eliminates this cost. However, in multi-threaded environments, a shared handle requires a `threading.Lock` to ensure atomic writes (JSON + newline) and prevent log interleaving.
 **Action:** Replace repeated `open()`/`close()` calls in hot logging paths with a persistent handle and a synchronization lock. Use `buffering=1` (line-buffering) to ensure data is flushed after every entry without sacrificing performance.
+
+## 2025-05-28 - [Local Variable Binding Patterns for Recursion]
+**Learning:** Binding globals and built-ins to local variables (via default arguments) improves performance in Python by avoiding global namespace lookups. However, explicitly passing these bindings in recursive calls (`f(..., _isinstance=_isinstance)`) adds significant keyword argument overhead. Relying on default parameter evaluation in the next call frame is both faster and much cleaner.
+**Action:** Use default arguments for binding globals in recursive functions, but do NOT pass them explicitly in the recursive call sites.
