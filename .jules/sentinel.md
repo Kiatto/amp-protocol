@@ -42,3 +42,8 @@
 **Vulnerability:** Non-finite numeric values (NaN, Infinity) could bypass recursive collection validation, potentially causing serialization errors or protocol logic bypasses in downstream systems.
 **Learning:** Type-checking for `float` is insufficient for security-critical numeric gates. Malformed non-finite values are valid floats in Python but non-standard in JSON and can break arithmetic assumptions (e.g., `NaN != NaN`).
 **Prevention:** Implement `math.isfinite()` checks at all validation entry points for numeric data, especially within recursive collection scanners. Standardize error messages to ensure consistency between models and security tests.
+
+## 2026-04-20 - Resource Exhaustion via High-Breadth Recursive Collections
+**Vulnerability:** Even with `MAX_DEPTH` and `MAX_COLLECTION_SIZE` limits, a maliciously crafted tree (e.g., width 100, depth 10) can contain an astronomical number of nodes ($100^{10}$), leading to CPU and memory exhaustion (Denial of Service) during recursive validation.
+**Learning:** Limiting depth and individual collection size is insufficient for preventing resource exhaustion in recursive data structures. The total complexity of the tree must be bounded by a global node count.
+**Prevention:** Implement a `MAX_TOTAL_NODES` limit that tracks and restricts the total number of elements visited during recursive validation across the entire data structure.

@@ -19,7 +19,7 @@ from datetime import datetime, timezone, UTC
 import math
 from typing import Any, Dict, List, Union
 
-from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
+from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH, MAX_TOTAL_NODES
 from amp.models import Decision
 
 
@@ -45,6 +45,14 @@ def _validate_collection(
     Recursively validate that a collection (dict or list) only contains
     allowed types and adheres to size/length limits.
     """
+    # Security: Track total nodes visited to prevent large-tree DoS.
+    if _count is None:
+        _count = [0]
+
+    _count[0] += 1
+    if _count[0] > MAX_TOTAL_NODES:
+        raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
+
     # ⚡ Bolt: Performance Optimization
     # Recursion depth check to prevent stack exhaustion and resource-based DoS.
     if depth > MAX_DEPTH:
@@ -78,7 +86,7 @@ def _validate_collection(
                 continue
 
             new_path = f"{path}.{k}" if path else k
-            _validate_collection(v, new_path, depth + 1)
+            _validate_collection(v, new_path, depth + 1, _count)
 
     elif _isinstance(data, _list):
         if _len(data) > MAX_COLLECTION_SIZE:
@@ -99,7 +107,7 @@ def _validate_collection(
                 continue
 
             new_path = f"{path}[{i}]"
-            _validate_collection(item, new_path, depth + 1)
+            _validate_collection(item, new_path, depth + 1, _count)
 
     elif _isinstance(data, _str):
         if _len(data) > MAX_TEXT_LENGTH:
