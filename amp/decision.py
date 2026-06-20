@@ -19,15 +19,25 @@ from datetime import datetime, timezone, UTC
 import math
 from typing import Any, Dict, List, Union
 
-from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH
+from amp.config import MAX_COLLECTION_SIZE, MAX_TEXT_LENGTH, MAX_ID_LENGTH, MAX_DEPTH, MAX_TOTAL_NODES
 from amp.models import Decision
 
 
-def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
+def _validate_collection(
+    data: Any, path: str = "", depth: int = 0, _count: list[int] | None = None
+) -> None:
     """
     Recursively validate that a collection (dict or list) only contains
     allowed types and adheres to size/length limits.
     """
+    # Security: Track total nodes visited to prevent large-tree DoS.
+    if _count is None:
+        _count = [0]
+
+    _count[0] += 1
+    if _count[0] > MAX_TOTAL_NODES:
+        raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
+
     # ⚡ Bolt: Performance Optimization
     # Recursion depth check to prevent stack exhaustion and resource-based DoS.
     if depth > MAX_DEPTH:
@@ -52,19 +62,25 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # Reordered type checks to prioritize strings (most common leaf node)
             # and simplified tuple (bool is a subclass of int in Python).
             if isinstance(v, str):
+                _count[0] += 1
+                if _count[0] > MAX_TOTAL_NODES:
+                    raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
                 if len(v) > MAX_TEXT_LENGTH:
                     new_path = f"{path}.{k}" if path else k
                     raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
                 continue
 
             if isinstance(v, (int, float)) or v is None:
+                _count[0] += 1
+                if _count[0] > MAX_TOTAL_NODES:
+                    raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
                 if v is not None and not math.isfinite(v):
                     new_path = f"{path}.{k}" if path else k
                     raise ValueError(f"Non-finite number at {new_path}")
                 continue
 
             new_path = f"{path}.{k}" if path else k
-            _validate_collection(v, new_path, depth + 1)
+            _validate_collection(v, new_path, depth + 1, _count)
 
     elif isinstance(data, list):
         if len(data) > MAX_COLLECTION_SIZE:
@@ -75,19 +91,25 @@ def _validate_collection(data: Any, path: str = "", depth: int = 0) -> None:
             # ⚡ Bolt: Performance Optimization
             # Prioritize strings and simplify scalar tuple in list unrolling.
             if isinstance(item, str):
+                _count[0] += 1
+                if _count[0] > MAX_TOTAL_NODES:
+                    raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
                 if len(item) > MAX_TEXT_LENGTH:
                     new_path = f"{path}[{i}]"
                     raise ValueError(f"String at {new_path} exceeds MAX_TEXT_LENGTH")
                 continue
 
             if isinstance(item, (int, float)) or item is None:
+                _count[0] += 1
+                if _count[0] > MAX_TOTAL_NODES:
+                    raise ValueError(f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded")
                 if item is not None and not math.isfinite(item):
                     new_path = f"{path}[{i}]"
                     raise ValueError(f"Non-finite number at {new_path}")
                 continue
 
             new_path = f"{path}[{i}]"
-            _validate_collection(item, new_path, depth + 1)
+            _validate_collection(item, new_path, depth + 1, _count)
 
     elif isinstance(data, str):
         if len(data) > MAX_TEXT_LENGTH:

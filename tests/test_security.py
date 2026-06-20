@@ -716,3 +716,36 @@ def test_non_finite_number_validation():
     from amp.decision import _validate_collection
     with pytest.raises(ValueError, match="Non-finite number at root"):
         _validate_collection(float("nan"))
+
+
+def test_total_nodes_limit_validation():
+    from amp.decision import build_decision_record, _validate_collection
+    from amp.config import MAX_TOTAL_NODES
+
+    # Construct a tree that stays within MAX_DEPTH and MAX_COLLECTION_SIZE
+    # but exceeds MAX_TOTAL_NODES.
+    # MAX_TOTAL_NODES = 1000.
+    # Depth 3, width 11 -> 1 + 11 + 11^2 + 11^3 = 1 + 11 + 121 + 1331 = 1464 nodes.
+    def create_tree(depth, width):
+        if depth <= 0:
+            return "leaf"
+        return {f"k{i}": create_tree(depth - 1, width) for i in range(width)}
+
+    oversized_tree = create_tree(3, 11)
+
+    with pytest.raises(
+        ValueError, match=f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded"
+    ):
+        _validate_collection(oversized_tree)
+
+    # Verify build_decision_record also enforces this via _validate_collection
+    valid_intent = {"name": "INTENT", "confidence": 0.9}
+    valid_gap = {"type": "GAP", "severity": 0.8}
+    valid_context = {"proximity_score": 0.7}
+
+    with pytest.raises(
+        ValueError, match=f"Maximum total nodes limit of {MAX_TOTAL_NODES} exceeded"
+    ):
+        build_decision_record(
+            "NEUTRAL", valid_intent, valid_gap, valid_context, oversized_tree
+        )
